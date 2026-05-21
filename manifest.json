@@ -1,7 +1,7 @@
 {
   "name": "Altius Fitness App",
   "short_name": "Altius",
-  "start_url": "/Altius-FitnessApp/index.html",
+  "start_url": "https://wolf238.github.io/Altius-FitnessApp/",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#000000",
