@@ -1,0 +1,2927 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <!--explicatif du DOM et Modal : 
+  le DOM c'est l'arborescence complète de ta page web
+  Le Modal c'est C'est une "fenêtre pop-up" qui s'ouvre par-dessus le reste de la page-->
+
+<head>
+    <!-- Définit l’encodage du texte. UTF‑8 = permet d’afficher tous les caractères (accents, emojis, etc.) -->
+<meta charset="UTF-8"/>
+<!-- Règle comment la page doit s’adapter sur mobile.
+       - width=device-width → largeur = écran du téléphone
+       - initial-scale=1.0 → zoom normal
+       - maximum-scale=1.0 → empêche le zoom manuel -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+  <!-- Titre affiché dans l’onglet du navigateur -->
+<title>Altius</title>
+ <!-- Importation de deux polices Google Fonts :
+       - DM Sans → texte général
+       - DM Mono → chiffres / style “terminal” -->
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="manifest" href="manifest.json">
+
+<!-- :root = zone où l’on définit des variables CSS réutilisables partout.
+   Cela permet de changer facilement les couleurs et styles de toute l’app. -->
+<style>
+:root{--bg:#0F0F11;--bg2:#17171A;--bg3:#1E1E23;--border:rgba(233, 75, 7, 0.132);--border2:rgba(255,255,255,0.14);--text:#F0F0F2;--text2:#887ed4f6;--text3:#5A5A70;--accent:#f53900;--accent2:#2563c7;--green:#12a808;--green2:#148F56;--red:#ef0000;--yellow:#F5A623;--radius:14px;--radius-sm:8px}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg)}
+
+/* Style général du body :
+   - police DM Sans
+   - texte clair
+   - centré horizontalement
+   - aligné en haut verticalement */
+body{font-family:'DM Sans',sans-serif;color:var(--text);display:flex;justify-content:center;align-items:flex-start;min-height:100vh}
+/* Conteneur principal de l’application (format smartphone) */
+.shell{width:100%;max-width:420px;min-height:100vh;background:var(--bg);display:flex;flex-direction:column;position:relative;overflow:hidden}
+.topbar{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 16px 12px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.topbar-logo{font-size:18px;font-weight:600;letter-spacing:-.5px;color:var(--text)}
+.topbar-logo span{color:var(--accent)}
+/* Petit badge vert “session en cours” (caché par défaut) */
+.session-pill{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--green);background:rgba(34,200,122,0.12);border:1px solid rgba(34,200,122,0.25);padding:4px 12px;border-radius:20px;display:none}/* Caché tant que la classe .on n’est pas ajoutée */
+/* Quand la session est active → affichage + animation */
+.session-pill.on{display:block;animation:pulse 2s infinite}
+
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.7}}
+.nav{display:flex;background:var(--bg2);border-bottom:1px solid var(--border);flex-shrink:0}
+
+/* Boutons de navigation */
+.nav-btn{flex:1;padding:10px 4px 9px;font-size:11px;font-weight:500;border:none;background:transparent;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.2px}
+.nav-btn.active{color:var(--accent);border-bottom-color:var(--accent)}
+.screen{display:none;flex:1;overflow-y:auto;padding:12px}
+.screen.active{display:block}
+
+/* Carte générique utilisée partout dans l’app :
+   - fond sombre
+   - bordure légère
+   - arrondi
+   - padding interne */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 14px;margin-bottom:10px}
+
+/* Boutons de navigation */
+.btn{display:block;width:100%;padding:10px 14px;font-size:13px;font-weight:500;border:1px solid var(--border2);border-radius:var(--radius-sm);background:transparent;color:var(--text);cursor:pointer;text-align:center;margin-bottom:8px;transition:all .15s;font-family:'DM Sans',sans-serif}
+.btn:hover{background:var(--bg3)}
+.btn:last-child{margin-bottom:0}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:var(--accent2)}
+.btn-success{background:var(--green);color:#fff;border-color:var(--green)}
+.btn-success:hover{background:var(--green2)}
+.btn-danger{border-color:rgba(239, 108, 1, 0.529);color:var(--red)}
+.btn-danger:hover{background:rgba(224,82,82,0.08)}
+.btn-sm{padding:5px 10px;font-size:11px;width:auto;display:inline-block;margin:0}
+.btn-icon{width:34px;height:34px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:var(--text);transition:all .15s}
+.btn-icon.play{background:var(--green);border-color:var(--green);color:#fff}
+.btn-icon.pause{background:var(--yellow);border-color:var(--yellow);color:#fff}
+.btn-icon.check{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn-icon.checked{background:var(--green);border-color:var(--green);color:#fff}
+
+.fab{width:40px;height:40px;border-radius:50%;border:none;background:var(--green);color:#fff;font-size:16px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 4px 16px rgba(34,200,122,0.3)}
+.fab:hover{background:var(--green2)}
+/* Champs texte et nombre */
+input[type=text],input[type=number]{width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:var(--radius-sm);font-size:13px;background:var(--bg3);color:var(--text);margin-bottom:8px;font-family:'DM Sans',sans-serif;outline:none}
+/* Bordure orange quand on clique dans le champ */
+input:focus{border-color:var(--accent)}
+
+label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px}
+.tag{display:inline-block;font-size:10px;padding:2px 7px;border-radius:20px;margin:2px 2px 2px 0}
+.tag-cat{background:rgba(79,142,247,0.12);color:#7AADF7;border:1px solid rgba(79,142,247,0.2)}
+.tag-equip{background:rgba(245,166,35,0.1);color:#D4913A;border:1px solid rgba(245,166,35,0.2)}
+.tag-muscle{background:rgba(34,200,122,0.1);color:#1DAB67;border:1px solid rgba(34,200,122,0.2)}
+/* Grille 2 colonnes pour afficher deux stats côte à côte */
+.stats-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:10px}
+/* Carte pour les statistiques (chiffres, valeurs) */
+.stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px}
+.stat-label{font-size:10px;color:var(--text2);margin-bottom:2px;text-transform:uppercase;letter-spacing:.5px}
+.stat-val{font-size:24px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace}
+
+/* Carte spécifique pour les routines (même principe que .card) */
+.routine-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 14px;margin-bottom:10px}
+.routine-name{font-size:15px;font-weight:600;color:var(--text);margin-bottom:3px}
+.routine-meta{font-size:11px;color:var(--text2);margin-bottom:8px}
+.routine-actions{display:flex;gap:8px;align-items:center;margin-top:10px}
+.search-wrap{position:relative;margin-bottom:8px}
+.search-wrap input{margin-bottom:0;padding-left:34px}
+.search-icon{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:14px;pointer-events:none}
+.filter-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px}
+.filter-btn{font-size:10px;padding:4px 10px;border:1px solid var(--border2);border-radius:20px;background:transparent;color:var(--text2);cursor:pointer;white-space:nowrap}
+.filter-btn.active{background:var(--accent);color:#ffffff;border-color:var(--accent)}
+.ex-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:7px;cursor:pointer;transition:border-color .15s}
+.ex-card:hover{border-color:var(--border2)}
+/* Miniature de l’exercice (image ronde) */
+.ex-thumb {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  flex-shrink: 0;
+}
+
+.ex-card-name{font-size:13px;font-weight:500;color:var(--text);margin-bottom:2px}
+.ex-card-muscles{font-size:11px;color:var(--text2);margin-bottom:4px}
+.session-overlay{display:none;position:fixed;inset:0;background:var(--bg);z-index:100;flex-direction:column;max-width:420px;margin:0 auto;left:0;right:0}
+.session-overlay.on{display:flex}
+.session-header{background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.session-title{font-size:15px;font-weight:600;color:var(--text)}
+.session-body{flex:1;overflow-y:auto;padding:12px}
+.session-footer{background:var(--bg2);border-top:1px solid var(--border);padding:12px 16px;flex-shrink:0}
+.prog-wrap{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin-top:6px}
+.prog-bar{height:3px;background:var(--green);border-radius:2px;transition:width .3s}
+.sess-ex{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 13px;margin-bottom:9px;transition:border-color .2s,background .2s}
+.sess-ex.done{border-color:rgba(34,200,122,0.35);background:rgba(34,200,122,0.05)}
+.sess-ex-header{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.sess-ex-name{flex:1;font-size:13px;font-weight:500;color:var(--text)}
+.sess-ex-info{font-size:12px;color:var(--text2);margin-bottom:6px}
+.timer-row{display:flex;align-items:center;gap:8px}
+.timer-disp{font-family:'DM Mono',monospace;font-size:20px;font-weight:500;color:var(--text);min-width:52px}
+.timer-disp.done-c{color:var(--green)}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:200;align-items:flex-end;justify-content:center}
+.modal-bg.open{display:flex}
+.modal-bg.center{align-items:center}
+.modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius) var(--radius) 0 0;padding:16px;width:100%;max-width:420px;max-height:80vh;overflow-y:auto}
+.modal-center{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius);padding:20px;width:88%;max-width:340px}
+.modal h2{font-size:15px;font-weight:600;margin-bottom:12px;color:var(--text)}
+.modal-actions{display:flex;gap:8px;margin-top:8px}
+.hist-card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:12px 14px;margin-bottom:9px;cursor:pointer;transition:border-color .15s}
+.hist-card:hover{border-color:var(--border2)}
+.bar-chart{display:flex;align-items:flex-end;gap:6px;height:90px;margin:8px 0 4px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;height:100%;justify-content:flex-end}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;background:var(--accent);min-height:4px}
+.bar-lbl{font-size:8px;color:var(--text2);text-align:center;word-break:break-all;line-height:1.2}
+.bar-count{font-size:9px;color:var(--text2)}
+.back-btn{background:none;border:none;color:var(--accent);font-size:12px;cursor:pointer;padding:0;margin-bottom:10px;display:flex;align-items:center;gap:4px;font-family:'DM Sans',sans-serif}
+.empty{text-align:center;padding:28px 16px;color:var(--text2);font-size:12px}
+.section-label{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:8px}
+.type-toggle{display:flex;gap:6px;margin-bottom:12px}
+.type-btn{flex:1;padding:7px;font-size:12px;border:1px solid var(--border2);border-radius:var(--radius-sm);background:transparent;color:var(--text2);cursor:pointer;font-family:'DM Sans',sans-serif}
+.type-btn.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* ════════════════════════════════════════════
+   ══ STATS PANEL (panneau des statistiques) ══
+   Ce bloc gère l’écran qui s’ouvre par-dessus l’app
+   pour afficher les statistiques de l’utilisateur.
+   ════════════════════════════════════════════ */
+.stats-panel{display:none;position:fixed;inset:0;background:var(--bg);z-index:150;overflow-y:auto;max-width:420px;left:0;right:0;margin:0 auto}
+.stats-panel.on{display:block}
+.stats-panel-header{position:sticky;top:0;background:var(--bg2);border-bottom:1px solid var(--border);padding:13px 16px;display:flex;align-items:center;justify-content:space-between;z-index:10}
+.stats-panel-title{font-size:15px;font-weight:600;color:var(--text)}
+.period-toggle{display:flex;background:var(--bg3);border-radius:20px;padding:2px;gap:2px}
+.period-btn{flex:1;padding:5px 10px;font-size:11px;border:none;background:transparent;color:var(--text2);cursor:pointer;border-radius:18px;font-family:'DM Sans',sans-serif;transition:all .15s;white-space:nowrap}
+.period-btn.active{background:var(--bg2);color:var(--text);font-weight:500;box-shadow:0 1px 4px rgba(0,0,0,0.35)}
+.stats-body{padding:12px}
+
+/* ══ Blocs stats ══ */
+/* Conteneurs de petites cartes de statistiques */
+.sblock{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:13px 14px;margin-bottom:10px}
+.sblock-title{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.7px;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.s4grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.scard{background:var(--bg3);border-radius:var(--radius-sm);padding:10px 12px}
+.scard-label{font-size:10px;color:var(--text2);margin-bottom:3px;text-transform:uppercase;letter-spacing:.4px}
+.scard-val{font-size:22px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace;line-height:1}
+.scard-unit{font-size:11px;color:var(--text3);margin-left:2px}
+.scard-accent{border:1px solid rgba(245,57,0,0.25);background:rgba(245,57,0,0.06)}
+.scard-green{border:1px solid rgba(18,168,8,0.25);background:rgba(18,168,8,0.06)}
+
+/* ══ Calendrier ══ */
+/* Grille 7 colonnes pour les jours de la semaine */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-top:6px}
+.cal-day-label{font-size:9px;color:var(--text3);text-align:center;padding-bottom:3px;font-weight:500}
+.cal-day{aspect-ratio:1;border-radius:5px;background:var(--bg3)}
+.cal-day.s1{background:var(--accent)}
+.cal-day.s2{background:var(--green)}
+.cal-day.today{box-shadow:0 0 0 2px var(--text2)}
+.cal-day.empty{background:transparent}
+
+/* ══ Barre chart (mini histogramme) ══ */
+/* Conteneur des colonnes, alignées en bas */
+.bar-wrap{display:flex;align-items:flex-end;gap:5px;height:80px;margin-top:8px}
+.bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end}
+.bar-fill{width:100%;border-radius:4px 4px 0 0;min-height:3px;transition:height .3s}
+.bar-lbl{font-size:8px;color:var(--text3);text-align:center;line-height:1.2}
+.bar-val{font-size:8px;color:var(--text3)}
+
+/* ══ Muscle list (liste des muscles travaillés) ══ */
+/* Ligne par muscle avec barre de progression */
+.muscle-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border)}
+.muscle-row:last-child{border-bottom:none}
+.muscle-bar-bg{flex:1;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.muscle-bar-fill{height:6px;border-radius:3px;background:var(--accent)}
+
+/* ═══════════════════════════════════════════════════
+   SÉRIES INDIVIDUELLES — Éditeur de routine
+   Chaque série a ses propres reps, poids et repos.
+   ═══════════════════════════════════════════════════ */
+.serie-row{display:flex;align-items:center;gap:6px;padding:6px 0;border-bottom:1px solid var(--border)}
+.serie-row:last-of-type{border-bottom:none}
+.serie-num{font-size:10px;font-weight:600;color:var(--text3);width:22px;flex-shrink:0;text-align:center}
+.serie-input{width:52px!important;padding:5px 6px!important;font-size:12px!important;margin-bottom:0!important;text-align:center}
+.serie-label{font-size:9px;color:var(--text3);text-align:center;display:block;margin-top:1px}
+.serie-del{width:22px;height:22px;border-radius:50%;border:1px solid rgba(224,82,82,0.3);background:transparent;color:var(--red);font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn-add-serie{width:100%;padding:6px;font-size:11px;border:1px dashed var(--border2);border-radius:var(--radius-sm);background:transparent;color:var(--text2);cursor:pointer;margin-top:6px;font-family:'DM Sans',sans-serif;transition:all .15s}
+.btn-add-serie:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ═══════════════════════════════════════════════════
+   SÉRIES EN SESSION — pendant l'entraînement
+   ═══════════════════════════════════════════════════ */
+.sess-serie-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--border)}
+.sess-serie-row:last-of-type{border-bottom:none}
+.sess-serie-row.serie-done{opacity:0.55}
+.sess-serie-num{font-size:11px;font-weight:600;color:var(--text3);width:24px;flex-shrink:0}
+.sess-serie-info{flex:1;font-size:12px;color:var(--text)}
+.sess-serie-timer{font-family:'DM Mono',monospace;font-size:13px;font-weight:500;color:var(--yellow);min-width:38px;text-align:center}
+.sess-serie-check{width:30px;height:30px;border-radius:50%;border:1px solid var(--border2);background:var(--bg3);color:var(--text2);font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.sess-serie-check.done{background:var(--green);border-color:var(--green);color:#fff}
+
+/* Modal modification exercice en session */
+.edit-sess-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:250;align-items:flex-end;justify-content:center}
+.edit-sess-modal.open{display:flex}
+.edit-sess-modal-inner{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius) var(--radius) 0 0;padding:16px;width:100%;max-width:420px;max-height:80vh;overflow-y:auto}
+
+/* ══ MODAL RÉORGANISATION ══ */
+.reorg-modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:210;align-items:flex-end;justify-content:center}
+.reorg-modal-bg.open{display:flex}
+.reorg-modal{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius) var(--radius) 0 0;padding:14px;width:100%;max-width:420px;max-height:75vh;display:flex;flex-direction:column}
+.reorg-list{overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.reorg-item{display:flex;align-items:center;gap:10px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;cursor:grab;user-select:none;transition:border-color .15s}
+.reorg-item:active{cursor:grabbing}
+.reorg-item.drag-over{border-color:var(--accent);background:rgba(245,57,0,0.06)}
+.reorg-item.dragging-ghost{opacity:.35}
+.reorg-num{font-size:11px;font-weight:600;color:var(--text3);width:20px;text-align:center;flex-shrink:0}
+.reorg-img{width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg2)}
+.reorg-name{font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.reorg-sub{font-size:10px;color:var(--text3)}
+.reorg-handle{font-size:18px;color:var(--text3);flex-shrink:0}
+
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:4px}
+.card[draggable="true"] {
+  cursor: grab;
+  transition: all 0.2s;
+}
+/* Effet visuel au survol d’une carte déplacable */
+.card[draggable="true"]:hover {
+  border-color: var(--accent);
+  background: rgba(79,142,247,0.05);
+}
+
+.card[draggable="true"].dragging {
+  opacity: 0.5 !important;
+  transform: scale(0.98);
+}
+</style>
+
+</head>
+
+
+<body>
+  <!-- acceuille -->
+<div class="shell">
+      <!-- ══ TOPBAR : barre en haut avec le nom de l'app et un petit indicateur de session -->
+  <div class="topbar">
+    <div class="topbar-logo"><span style="color:var(--accent)">Alt</span><span style="color:var(--accent2)">ius</span></div>
+      <!-- Petit badge qui peut afficher la durée d'une séance ou un statut.
+           Il est caché par défaut (classe .session-pill) et affiché si on lui ajoute .on via JS. -->
+    <div class="session-pill" id="sess-pill">00:00</div>
+  </div>
+      <!-- ══ NAVIGATION PRINCIPALE : boutons pour changer d'écran -->
+  <div class="nav">
+     <!-- Chaque bouton appelle la fonction goTo(screenId, this)
+           - screenId : id de la section à afficher
+           - this : référence au bouton cliqué (utile pour gérer l'état "active")
+           Le premier bouton a la classe "active" pour indiquer l'écran initial. -->
+    <button class="nav-btn active" onclick="goTo('home',this)">Accueil</button>
+    <button class="nav-btn" onclick="goTo('routines',this)">Routines</button>
+    <button class="nav-btn" onclick="goTo('biblio',this)">Exercices</button>
+    <button class="nav-btn" onclick="goTo('profil',this)" style="color:var(--accent2)">Stats</button>
+  </div>
+    <!-- ══ ÉCRAN : HOME (page d'accueil) -->
+  <div id="home" class="screen active">
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-label">Ce mois</div><div class="stat-val" id="st-month">0</div></div>
+      <div class="stat-card"><div class="stat-label">Total</div><div class="stat-val" id="st-total">0</div></div>
+    </div>
+    <div class="section-label">Dernière séance</div>
+    <div id="home-last-session"></div>
+    <div class="section-label" style="margin-top:4px">Accès rapide</div>
+    <button class="btn btn-primary" onclick="goTo('routines',document.querySelectorAll('.nav-btn')[1])">&#9654; Mes routines</button>
+    <button class="btn" onclick="goTo('profil',document.querySelectorAll('.nav-btn')[3])">&#128100; Mon profil</button>
+    <button class="btn" onclick="goTo('biblio',document.querySelectorAll('.nav-btn')[2])">&#128269; Bibliothèque d'exercices</button>
+  </div>
+
+  <div id="routines" class="screen">
+    <div id="routine-list-view">
+      <div id="routines-list"></div>
+      <button class="btn btn-primary" onclick="openCreateRoutine()">+ Nouvelle routine</button>
+    </div>
+    
+ <!-- Vue détail : affiche les exercices d'une routine sélectionnée
+           Par défaut cachée (display:none). On l'affiche via JS quand on veut voir le détail. -->
+         <div id="routine-detail-view" style="display:none"> <strong>Détail de la routine</strong>
+    <button class="back-btn" onclick="closeRoutineView()">← Retour</button>
+    <div id="routine-detail-content"></div>
+  </div>
+  <!--affiche et modifie les exercises d'une routine sélectionnée-->
+    <div id="routine-edit-view" style="display:none"> <strong>modification de la routine</strong>
+      <button class="back-btn" onclick="closeRoutineEdit()">← Retour</button>
+      <div class="card">
+        <label>Nom de la routine</label>
+        <input type="text" id="routine-name-input" placeholder="ex: Push day, Full body..."/>
+      </div>
+      <div class="section-label">Exercices</div>
+      <div id="routine-exercises-edit"></div>
+      <button class="btn" onclick="openModalAddEx()">+ Ajouter un exercice</button>
+      <button class="btn" onclick="openReorgModal()" style="border-color:rgba(79,142,247,0.3);color:var(--accent)">🔀 Réorganiser</button>
+      <button class="btn btn-success" onclick="saveRoutine()">Enregistrer</button>
+    </div>
+  </div>
+
+  <div id="biblio" class="screen">
+    <div id="biblio-main">
+      <div class="search-wrap">
+        <span class="search-icon">&#128269;</span>
+        <input type="text" id="search-input" placeholder="Rechercher un exercice..." oninput="renderBiblio()"/>
+      </div>
+      <div class="filter-row" id="filter-row"></div>
+      <div id="biblio-list"></div>
+    </div>
+    <div id="biblio-detail" style="display:none">
+      <button class="back-btn" onclick="closeBiblioDetail()">← Retour</button>
+      <div id="detail-content"></div>
+    </div>
+  </div>
+
+  <div id="profil" class="screen">
+
+<!-- EN-TÊTE : zone du haut affichant l'avatar, le pseudo et un bouton de réglages -->
+     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+  <!-- Partie gauche : avatar + pseudo -->
+      <div style="display:flex;align-items:center;gap:12px;min-width:0">
+        <!-- Avatar du profil :
+         - carré arrondi (cercle)
+         - affiche une icône 👤 si aucune image n'est définie
+         - clickable → ouvre la fenêtre de modification du profil -->
+        <div id="p-avatar" onclick="openProfilModal()" style="width:54px;height:54px;border-radius:50%;background:var(--bg3);border:2px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;overflow:hidden;flex-shrink:0">👤</div>
+        <div style="min-width:0">
+          <div id="p-pseudo" style="font-size:16px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Mon Profil</div>
+          <div id="p-sub" style="font-size:11px;color:var(--text2);margin-top:1px">Appuie pour modifier</div>
+        </div>
+      </div>
+       <!-- Bouton réglages (roue dentée) → ouvre aussi la fenêtre de profil -->
+      <button onclick="openProfilModal()" style="width:36px;height:36px;border-radius:50%;background:var(--bg3);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;flex-shrink:0;color:var(--text2)">⚙️</button>
+    </div>
+
+<!-- CORPS 2 colonnes : gauche = entraînement + stats, droite = physique -->
+     <div style="display:flex;gap:10px;align-items:flex-start;width:100%">
+
+      <!-- Gauche : carte entraînement + stats -->
+      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+        <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px">Dernier entraînement</div>
+
+        <div onclick="openLastHistDetail()" style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;cursor:pointer">
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:8px 10px 4px">
+            <span id="p-time" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text2)">--:--</span>
+                  <!-- Bouton "Détail" (stopPropagation empêche de déclencher le clic parent) -->
+            <span onclick="event.stopPropagation();openLastHistDetail()" style="font-size:10px;color:var(--accent2);background:rgba(79,142,247,0.12);border:1px solid rgba(79,142,247,0.2);padding:3px 8px;border-radius:10px;cursor:pointer">Détail</span>
+          </div>
+             <!-- Zone centrale : graphique ou message "Aucune séance" -->
+          <div id="p-svg" style="display:flex;justify-content:center;padding:4px 10px 6px">
+            <div style="font-size:11px;color:var(--text3);text-align:center;padding:18px 0">Aucune séance</div>
+          </div>
+              <!-- Nom de la séance (caché tant qu'il n'y en a pas) -->
+          <div id="p-name" style="display:none;padding:0 10px 8px;font-size:11px;font-weight:500;color:var(--text2)"></div>
+        </div>
+  <!-- Deux cartes stats : Ce mois / Total -->
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:2px;text-transform:uppercase;letter-spacing:.4px">Ce mois</div>
+            <div id="p-stat-month" style="font-size:22px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace">0</div>
+            <div style="font-size:10px;color:var(--text3)">séances</div>
+          </div>
+          <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:10px 12px">
+            <div style="font-size:10px;color:var(--text2);margin-bottom:2px;text-transform:uppercase;letter-spacing:.4px">Total</div>
+            <div id="p-stat-total" style="font-size:22px;font-weight:600;color:var(--text);font-family:'DM Mono',monospace">0</div>
+            <div style="font-size:10px;color:var(--text3)">séances</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Droite : physique + mesures -->
+      <div style="width:128px;flex-shrink:0;display:flex;flex-direction:column;gap:10px">
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+            <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px">Physique</div>
+            <button onclick="openProfilModal()" style="font-size:10px;color:var(--accent);background:rgba(79,142,247,0.12);border:1px solid rgba(79,142,247,0.2);padding:2px 7px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif">✏️</button>
+          </div>
+          <div style="border-bottom:1px solid var(--border);padding:5px 0"><div style="font-size:10px;color:var(--text2)">Poids</div><div id="p-poids" style="font-size:13px;font-weight:600;color:var(--text)">-- kg</div></div>
+          <div style="border-bottom:1px solid var(--border);padding:5px 0"><div style="font-size:10px;color:var(--text2)">Taille</div><div id="p-taille" style="font-size:13px;font-weight:600;color:var(--text)">-- cm</div></div>
+          <div style="border-bottom:1px solid var(--border);padding:5px 0"><div style="font-size:10px;color:var(--text2)">Sexe</div><div id="p-sexe" style="font-size:13px;font-weight:600;color:var(--text)">--</div></div>
+          <div style="padding:5px 0"><div style="font-size:10px;color:var(--text2)">Âge</div><div id="p-age" style="font-size:13px;font-weight:600;color:var(--text)">--</div></div>
+        </div>
+  <!-- Carte Mesures -->
+        <div style="background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:11px 12px">
+          <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px">📏 Mesures</div>
+          <div style="font-size:11px;color:var(--text3);text-align:center;padding:14px 0">Bientôt</div>
+        </div>
+          <!-- Bouton Mes Stats -->
+        <button onclick="openStatsPanel()" style="width:100%;padding:10px;background:var(--accent);color:#fff;border:none;border-radius:var(--radius-sm);font-size:12px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;letter-spacing:.3px">📊 Mes Stats</button>
+      </div>
+    </div>
+
+    <!-- Historique récent -->
+    <div style="margin-top:14px">
+      <div style="font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:8px">Historique des séances</div>
+      <div id="p-hist-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="session-overlay" id="session-overlay">
+  <div class="session-header">
+    <div>
+      <div class="session-title" id="sess-title">Séance</div>
+      <div style="font-size:11px;color:var(--text2)" id="sess-meta">0/0 exercices</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-family:'DM Mono',monospace;font-size:22px;font-weight:500;color:var(--green)" id="sess-clock">00:00</div>
+      <div style="font-size:10px;color:var(--text3)">durée</div>
+    </div>
+  </div>
+  <div style="padding:0 16px 6px;background:var(--bg2);border-bottom:1px solid var(--border)">
+    <div class="prog-wrap"><div class="prog-bar" id="sess-prog-bar" style="width:0%"></div></div>
+  </div>
+  <div class="session-body" id="sess-body"></div>
+  <div class="session-footer">
+    <button class="btn" onclick="openModalAddEx()">+ Ajouter un exercice</button>
+    <button class="btn btn-danger" onclick="stopSession()" style="margin-bottom:0">&#9209; Arrêter la séance</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-add-ex">
+  <div class="modal">
+    <h2>Ajouter un exercice</h2>
+    <div class="search-wrap">
+      <span class="search-icon">&#128269;</span>
+      <input type="text" id="modal-search" placeholder="Rechercher..." oninput="renderModalBiblio()"/>
+    </div>
+    <div id="modal-biblio-list"></div>
+    <button class="btn" onclick="closeModalAddEx()" style="margin-top:6px">Fermer</button>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal-cfg">
+  <div class="modal">
+    <h2 id="cfg-title">Configurer l'exercice</h2>
+    <div class="type-toggle">
+      <button class="type-btn active" id="cfg-btn-reps" onclick="setCfgType('reps')">Séries / Répétitions</button>
+      <button class="type-btn" id="cfg-btn-time" onclick="setCfgType('time')">Durée (chrono)</button>
+    </div>
+    <div id="cfg-reps-fields">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div><label>Séries</label><input type="number" id="cfg-sets" placeholder="3" min="1" max="20"/></div>
+        <div><label>Répétitions</label><input type="number" id="cfg-reps" placeholder="10" min="1" max="100"/></div>
+        <div><label>Poids (kg)</label><input type="number" id="cfg-weight" placeholder="0" min="0" max="500"/></div>
+      </div>
+    </div>
+    <div id="cfg-time-fields" style="display:none">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div><label>Durée (secondes)</label><input type="number" id="cfg-duration" placeholder="60" min="5" max="3600"/></div>
+        <div><label>Séries</label><input type="number" id="cfg-tsets" placeholder="1" min="1" max="10"/></div>
+      </div>
+    </div>
+    <div style="margin-top:10px">
+      <label>Pause entre exercices (s)</label>
+      <input type="number" id="cfg-rest" placeholder="30" min="0" max="300"/>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary" onclick="confirmCfgEx()">Ajouter</button>
+      <button class="btn" onclick="closeModalCfg()">Annuler</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-bg center" id="modal-stop">
+  <div class="modal-center">
+    <h2>Arrêter la séance ?</h2>
+    <p style="font-size:12px;color:var(--text2);margin-bottom:16px">Que souhaitez-vous faire avec cet entraînement ?</p>
+    <button class="btn btn-success" onclick="endSession(true)" style="margin-bottom:8px">&#128190; Enregistrer la séance</button>
+    <button class="btn btn-danger" onclick="endSession(false)" style="margin-bottom:8px">&#128465; Supprimer l'entraînement</button>
+    <button class="btn" onclick="document.getElementById('modal-stop').classList.remove('open')">Continuer la séance</button>
+  </div>
+</div>
+
+<script>
+// ╔══════════════════════════════════════════════════════════════════════════════╗
+// ║                         FITTRACK — CODE JAVASCRIPT                         ║
+// ║                     Guide pour débutants complet                           ║
+// ╠══════════════════════════════════════════════════════════════════════════════╣
+// ║                                                                              ║
+// ║  CE FICHIER EST DIVISÉ EN GRANDES SECTIONS :                               ║
+// ║                                                                              ║
+// ║  1. BASE DE DONNÉES (DB)                                                   ║
+// ║     Tableau de tous les exercices disponibles. Chaque exercice est un       ║
+// ║     objet avec : id, nom, catégorie, équipement, muscles, image, etc.      ║
+// ║     → Pour ajouter un exercice : copie un objet existant, change les       ║
+// ║       valeurs, et donne-lui un id unique (max_id + 1).                     ║
+// ║                                                                              ║
+// ║  2. MMAP (Muscle Map)                                                       ║
+// ║     Relie les noms de muscles aux zones du personnage SVG.                  ║
+// ║                                                                              ║
+// ║  3. VARIABLES GLOBALES                                                      ║
+// ║     Données partagées dans tout le code : routines, historique, profil...   ║
+// ║                                                                              ║
+// ║  4. FONCTIONS UTILITAIRES                                                   ║
+// ║     pad(), fmt(), playSound(), saveData()...                               ║
+// ║                                                                              ║
+// ║  5. NAVIGATION                                                              ║
+// ║     goTo() — change d'écran                                                ║
+// ║                                                                              ║
+// ║  6. ACCUEIL                                                                 ║
+// ║     renderHome() — affiche les stats et la dernière séance                 ║
+// ║                                                                              ║
+// ║  7. ROUTINES                                                                ║
+// ║     Créer, modifier, supprimer, dupliquer des routines                      ║
+// ║     renderRoutineList / editRoutine / saveRoutine / renderEditExercises     ║
+// ║                                                                              ║
+// ║  8. SÉANCE                                                                  ║
+// ║     launchSession / renderSess / buildSessEx                               ║
+// ║     toggleDone / toggleSerieDone / startRestTimer                          ║
+// ║     stopSession / endSession                                               ║
+// ║                                                                              ║
+// ║  9. BIBLIOTHÈQUE                                                            ║
+// ║     renderBiblio / openBiblioDetail / buildSVG                            ║
+// ║                                                                              ║
+// ║  10. PROFIL & STATISTIQUES                                                 ║
+// ║      renderProfil / openStatsPanel / estimateKcal                          ║
+// ║      renderStats / renderCalendar / renderCalBars                          ║
+// ║                                                                              ║
+// ║  11. RÉORGANISATION DRAG & DROP                                             ║
+// ║      openReorgModal / reorgDrop                                             ║
+// ║                                                                              ║
+// ╠══════════════════════════════════════════════════════════════════════════════╣
+// ║  CONCEPTS CLÉS À COMPRENDRE :                                               ║
+// ║                                                                              ║
+// ║  ● localStorage : mémoire du navigateur. Données persistantes entre        ║
+// ║    les sessions. Accès via localStorage.setItem / getItem.                 ║
+// ║                                                                              ║
+// ║  ● JSON : format texte pour stocker des objets JS dans localStorage.       ║
+// ║    JSON.stringify(objet) → texte  |  JSON.parse(texte) → objet            ║
+// ║                                                                              ║
+// ║  ● innerHTML : propriété pour définir le HTML à l'intérieur d'un div.      ║
+// ║    Ex: document.getElementById('mon-div').innerHTML = '<p>Bonjour</p>'    ║
+// ║                                                                              ║
+// ║  ● classList.add/remove : ajoute/retire une classe CSS sur un élément.    ║
+// ║    Ex: el.classList.add('active') → affiche l'élément                     ║
+// ║        el.classList.remove('active') → cache l'élément                    ║
+// ║                                                                              ║
+// ║  ● setInterval / clearInterval : répète une action toutes les N ms.       ║
+// ║    Utilisé pour les chronomètres (toutes les 1000ms = 1 seconde).         ║
+// ╚══════════════════════════════════════════════════════════════════════════════╝
+
+// ══════════════════════════════════════════
+// 📦 BASE DE DONNÉES DES EXERCICES (DB)
+// ══════════════════════════════════════════
+// Chaque exercice est un OBJET avec ces propriétés :
+//   id      : numéro unique (ne jamais dupliquer !)
+//   name    : nom de l'exercice (tel qu'affiché dans l'app)
+//   cat     : catégorie (Poitrine, Dos, Jambes, Biceps, Triceps, Épaules, Abdominaux, Cardio)
+//   equip   : équipement nécessaire (Barre, Haltères, Poids du corps, Machine, Kettlebell)
+//   muscles : tableau des muscles PRINCIPAUX travaillés (colorés en vert vif sur le SVG)
+//   sec     : tableau des muscles SECONDAIRES (colorés en vert transparent)
+//   timed   : true si l'exercice se fait à la durée (planche, gainage...)
+//             false si l'exercice se fait en séries/répétitions
+//   image   : URL d'une image ou GIF illustrant l'exercice
+//
+// POUR AJOUTER UN EXERCICE :
+//   1. Copie une ligne existante
+//   2. Change toutes les valeurs
+//   3. Donne un id = (id le plus élevé actuel) + 1
+//   4. Assure-toi que les noms de muscles correspondent à des clés dans MMAP
+//      (sinon le SVG ne colorera pas le bon muscle)
+// ══════════════════════════════════════════
+var DB=[
+{id:1,name:"Développé couché",cat:"Poitrine",equip:"Barre",muscles:["Grand pectoral"],sec:["Deltoïde antérieur","Triceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2019/08/developpe-couche.gif"},
+{id:2,name:"Développé couché haltères",cat:"Poitrine",equip:"Haltères",muscles:["Grand pectoral"],sec:["Deltoïde antérieur","Triceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/05/developpe-couche-halteres-exercice-musculation.gif"},
+{id:3,name:"Pompes",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand pectoral"],sec:["Triceps","Deltoïdes"],timed:false,image:"https://www.body-burn.com/wp-content/uploads/2024/03/pompe-exercice-musculation.gif"},
+{id:4,name:"Écarté couché",cat:"Poitrine",equip:"Haltères",muscles:["Grand pectoral"],sec:["Deltoïde antérieur"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/09/ecarte-couche-haltere.gif"},
+{id:5,name:"Dips",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand pectoral","Triceps"],sec:["Deltoïde antérieur"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/01/dips-pectoraux-440x440.gif"},
+{id:6,name:"Pompes millitaire",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand pectoral"],sec:["Triceps","Épaules","Biceps"],timed:false,image: "https://www.body-burn.com/wp-content/uploads/2024/03/pompe-exercice-musculation.gif"},
+{id:7,name:"Pompes planche",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand dorsal"],sec:["Biceps","triceps","Épaules","abdominaux","avant-bras"],timed:false,image:"https://i.pinimg.com/736x/42/ac/e4/42ace438a6ad772c5fa30a51b479862f.jpg"},
+{id:8,name:"Pompes claquées",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand dorsal","Biceps"],sec:["Triceps","épaules"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2020/10/pompe-musculation.gif"},
+{id:9,name:"Pompes archée",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand pectoral","Biceps"],sec:["Triceps"],timed:false,image:"https://www.streetliftings.fr/wp-content/uploads/2024/10/Pompes-archers-execution-du-mouvement.gif"},
+{id:10,name:"Pompes larges",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand pectoral"],sec:["Biceps","Triceps"],timed:false,image:"https://purshape.com/wp-content/uploads/2024/06/Explication-comment-faire-des-pompes.jpg"},
+{id:11,name:"Développé couché incliné (haltères)",cat:"Poitrine",equip:"Haltères",muscles:["Grand pectoral"],sec:["Biceps","Triceps","Deltoides interieures"],timed:false,image:"https://www.fitadium.com/conseils/wp-content/uploads/2020/08/00471301-Barbell-Incline-Bench-Press_Chest_720.gif"},
+{id:12,name:"Pompes diamant",cat:"Triceps",equip:"Poids du corps",muscles:["Triceps"],sec:["Grand pectoral"],timed:false,image:"https://www.body-burn.com/wp-content/uploads/2024/03/pompe-mains-serrees.gif"},
+{id:13,name:"Tirage vertical poitrine",cat:"Dos",equip:"Machine",muscles:["Grand dorsal"],sec:["Biceps","Rhomboïdes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2021/11/tirage-vertical-poitrine.gif"},
+{id:14,name:"Rowing barre",cat:"Dos",equip:"Barre",muscles:["Grand dorsal","Rhomboïdes"],sec:["Biceps","Trapèzes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2021/09/rowing-barre.gif"},
+{id:15,name:"Rowing haltère",cat:"Dos",equip:"Haltères",muscles:["Grand dorsal","Rhomboïdes"],sec:["Biceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2021/08/rowing-haltere-un-bras.gif"},
+{id:16,name:"Traction",cat:"Dos",equip:"Poids du corps",muscles:["Grand dorsal"],sec:["Biceps","Rhomboïdes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/02/traction-musculation-dos.gif"},
+{id:17,name:"Face pull",cat:"Dos",equip:"Machine",muscles:["Rhomboïdes","Trapèzes"],sec:["Deltoïde postérieur"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/01/face-pull.gif"},
+{id:18,name:"Soulevé de terre",cat:"Dos",equip:"Barre",muscles:["Grand dorsal","Lombaires","Fessiers"],sec:["Quadriceps","Trapèzes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2021/12/souleve-de-terre.gif"},
+{id:19,name:"Good morning",cat:"Dos",equip:"Barre",muscles:["Lombaires","Ischio-jambiers"],sec:["Fessiers"],timed:false,image:"https://fitnessprogramer.com/wp-content/uploads/2021/02/Barbell-Good-Morning.gif"},
+{id:20,name:"Tractions australiennes",cat:"Dos",equip:"Poids du corps",muscles:["Grand dorsal","Rhomboïdes"],sec:["Biceps"],timed:false,image:"https://muscu-street-et-crossfit.fr/wp-content/uploads/2023/02/Muscles-tractions-australiennes.001-980x551.jpeg"},
+{id:21,name:"Tirage vertical prise sérrée",cat:"Dos",equip:"Machine",muscles:["Grand dorsal"],sec:["Biceps","Rhomboïdes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2021/08/tirage-vertical-prise-serree.gif"},
+{id:22,name:"Développé militaire (barre)",cat:"Épaules",equip:"Barre",muscles:["Deltoïde antérieur","Deltoïde médial"],sec:["Triceps","Trapèzes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/08/developpe-militaire-exercice-musculation.gif"},
+{id:23,name:"Elevations latérales",cat:"Épaules",equip:"Haltères",muscles:["Deltoïde médial"],sec:["Trapèzes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/08/elevations-laterales-exercice-musculation.gif"},
+{id:24,name:"Elevations frontales (halteres)",cat:"Épaules",equip:"Haltères",muscles:["Deltoïde antérieur"],sec:[],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/08/elevations-frontales-exercice-musculation.gif"},
+{id:25,name:"Oiseau",cat:"Épaules",equip:"Haltères",muscles:["Deltoïde postérieur","Rhomboïdes"],sec:["Trapèzes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2021/12/oiseau-assis-sur-banc.gif"},
+{id:26,name:"Shrugs",cat:"Épaules",equip:"Haltères",muscles:["Trapèzes"],sec:[],timed:false,image:"https://fitliferegime.com/wp-content/uploads/2023/05/Dumbbell-Shrug.gif"},
+{id:27,name:"Développé millitaire (haltères)",cat:"Épaules",equip:"Haltères",muscles:["Deltoides"],sec:["Biceps","Triceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/02/developpe-epaules-halteres-debout.gif"},
+{id:28,name:"Elevations frontale (barre)",cat:"Épaules",equip:"Barre",muscles:["Deltoides"],sec:["Biceps","avant-bras"],timed:false,image:"https://fitliferegime.com/wp-content/uploads/2023/08/Barbell-Front-Raise.gif"},
+{id:29,name:"Elevations disque frontale",cat:"Épaules",equip:"Disque de poids",muscles:["Deltoides"],sec:["Biceps"],timed:false,image:"https://workoutguru.fit/wp-content/uploads/2023/10/standing-plate-press-video-exercise-guide-tips.jpg"},
+{id:30,name:"Pompes en pic",cat:"Épaules",equip:"Poids du corps",muscles:["Deltoides"],sec:["Biceps"],timed:false,image:"https://workoutguru.fit/wp-content/uploads/2023/10/pike-push-up-video-exercise-guide-tips.jpg"},
+{id:31,name:"Pompes déclinées",cat:"Épaules",equip:"Poids du corps",muscles:["Deltoides"],sec:["Biceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2020/10/pompe-musculation.gif"},
+{id:32,name:"Marche du Fermier",cat:"Épaules",equip:"Haltères",muscles:["Deltoides"],sec:["Biceps","Mollets","ischio-jambiers"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2025/11/marche-du-fermier-avec-kettlebells.gif"},
+{id:33,name:"Thruster",cat:"Épaules",equip:"barre",muscles:["Deltoides"],sec:["ischio-jambiers","Triceps","cuisse"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/04/thruster.gif"},
+{id:34,name:"développé Arnold",cat:"Épaules",equip:"Haltères",muscles:["Deltoides"],sec:["Triceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/08/developpe-arnold-exercice-musculation.gif"},
+{id:35,name:"presse épaules incliné",cat:"Épaules",equip:"Machine",muscles:["Deltoides"],sec:["Triceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2021/08/presse-epaule-exercice-musculation.gif"},
+{id:36,name:"Elevations latérales à la poulie",cat:"Épaules",equip:"Machine",muscles:["Deltoïde médial"],sec:["Trapèzes"],timed:false,image:"https://boxlifemagazine.com/wp-content/uploads//2023/06/elevations-laterales-unilaterale-poulie.gif"},
+{id:37,name:"Oiseau à la poulie",cat:"Épaules",equip:"Machine",muscles:["Deltoïde postérieur"],sec:["Rhomboïdes","Trapèzes"],timed:false,image:"https://musculation-nutrition.fr/wp-content/uploads/2021/01/Oiseau-cable-.jpg"},
+{id:38,name:"Développé militaire assis (haltères)",cat:"Épaules",equip:"Haltères",muscles:["Deltoïde antérieur","Deltoïde médial"],sec:["Triceps"],timed:false,image:"https://boxlifemagazine.com/wp-content/uploads//2023/05/developpe-epaule-halteres-1.gif"},
+{id:39,name:"Élévations frontales à la poulie basse",cat:"Épaules",equip:"Machine",muscles:["Deltoïde antérieur"],sec:["Trapèzes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/04/elevation-frontale-poulie-basse.gif"},
+{id:40,name:"Rowing menton",cat:"Épaules",equip:"Barre",muscles:["Deltoïde médial","Trapèzes"],sec:["Biceps"],timed:false,image:"https://muscu-street-et-crossfit.fr/wp-content/uploads/2022/05/Muscles-Rowing-Menton.001-980x551.jpeg"},
+{id:41,name:"Face pull poulie corde",cat:"Épaules",equip:"Machine",muscles:["Deltoïde postérieur","Rhomboïdes"],sec:["Trapèzes"],timed:false,image:"https://www.body-burn.com/wp-content/uploads/2023/08/face-pull-exercice-musculation-epaules.gif"},
+{id:42,name:"Développé militaire Smith machine",cat:"Épaules",equip:"Machine",muscles:["Deltoïde antérieur","Deltoïde médial"],sec:["Triceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/08/developpe-epaules-smith-machine.gif"},
+{id:43,name:"Pompes en pike surélevées",cat:"Épaules",equip:"Poids du corps",muscles:["Deltoïde antérieur","Deltoïde médial"],sec:["Triceps","Trapèzes"],timed:false,image:"https://muscu-street-et-crossfit.fr/wp-content/uploads/2023/04/Muscles-pike-push-up.002-980x551.jpeg"},
+{id:44,name:"Développé millitaire (haltères)",cat:"Épaules",equip:"Haltères",muscles:["Deltoides"],sec:["Biceps","Triceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/02/developpe-epaules-halteres-debout.gif"},
+{id:45,name:"Curl biceps barre",cat:"Biceps",equip:"Barre",muscles:["Biceps"],sec:["Avant-bras"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/06/drag-curl.gif"},
+{id:46,name:"Curl haltères",cat:"Biceps",equip:"Haltères",muscles:["Biceps"],sec:["Avant-bras"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/09/drag-curl-halteres-assis.gif"},
+{id:47,name:"Curl marteau",cat:"Biceps",equip:"Haltères",muscles:["Biceps","Avant-bras"],sec:[],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2021/10/curl-haltere-prise-marteau-pupitre.gif"},
+{id:48,name:"Curl concentré",cat:"Biceps",equip:"Haltères",muscles:["Biceps"],sec:[],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2021/09/curl-concentre.gif"},
+{id:49,name:"Curl Disque",cat:"Bras",equip:"disque de poids",muscles:["Biceps"],sec:["Avant-bras"],timed:false,image:"https://modusx.de/wp-content/uploads/frontheben-mit-gewichtsscheibe.webp"},
+{id:50,name:"Extensions triceps poulie",cat:"Triceps",equip:"Machine",muscles:["Triceps"],sec:[],timed:false,image:"https://boxlifemagazine.com/wp-content/uploads//2023/05/extension-triceps-poulie-haute.gif"},
+{id:51,name:"Extension triceps (haltères)",cat:"Bras",equip:"Haltères",muscles:["Triceps"],sec:[],timed:false,image:"https://boxlifemagazine.com/wp-content/uploads/2023/12/Overhead-Dumbbell-Extensions.jpeg"},
+{id:52,name:"Pompes diamant",cat:"Triceps",equip:"Poids du corps",muscles:["Triceps"],sec:["Grand pectoral"],timed:false,image:"https://boxlifemagazine.com/wp-content/uploads//2023/08/pompe-mains-serrees-min-1.gif"},
+{id:53,name:"Extension poignets (barre)",cat:"avant-bras",equip:"Barre",muscles:["avant-bras"],sec:[],timed:false,image:"https://liftmanual.com/wp-content/uploads/2023/04/barbell-palms-down-wrist-curl-over-a-bench.gif"},
+{id:54,name:"Gainage planche",cat:"Abdominaux",equip:"Poids du corps",muscles:["Abdominaux","Transverse"],sec:["Lombaires","Fessiers"],timed:true,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/05/planche-abdos.gif"},
+{id:55,name:"burpees",cat:"cardio",equip:"Poids du corps",muscles:["Corps"],sec:["Abdominaux","Épaules,bras,ischio-jambiers"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2019/08/burpee-muscle-sollicites.gif"}
+];
+
+// ═══════════════════════════════════════════════════════════════════
+// 🎨 MMAP — MAPPING DES MUSCLES VERS LE PERSONNAGE SVG
+// ─────────────────────────────────────────────────────────────────
+// Ce tableau fait le lien entre le NOM d'un muscle (utilisé dans DB)
+// et l'IDENTIFIANT SVG de la zone correspondante sur le personnage.
+//
+// EXEMPLE :
+//   "Biceps" → ["bi"]    = la zone "bi" dans le SVG sera colorée
+//   "Épaules" → ["delt-a","delt-m"]  = 2 zones colorées à la fois
+//
+// COMMENT AJOUTER UN NOUVEAU MUSCLE :
+//   1. Ajoute une forme (rect, ellipse, path) dans buildSVG() avec un id unique
+//      Ex: +'<rect id="mon-muscle" x="..." ..."/>'
+//   2. Ajoute la correspondance ici :
+//      "Mon Muscle": ["mon-muscle"]
+//   3. Utilise ce nom dans les propriétés "muscles" ou "sec" de tes exercices dans DB
+// ═══════════════════════════════════════════════════════════════════
+// Ce mapping fait correspondre chaque nom de muscle à l'identifiant SVG
+// qui le représente dans le dessin du corps humain.
+// Exemple: "Grand pectoral" -> ["pec"] colore la partie "pec" du SVG
+// Utilisé pour afficher visuellement quels muscles sont travaillés
+var MMAP={
+"Grand pectoral":["pec"],"Deltoïde antérieur":["delt-a"],"Deltoïde médial":["delt-m"],
+"Deltoïde postérieur":["delt-p"],"Deltoïdes":["delt-a","delt-m"],"Triceps":["tri"],
+"Biceps":["bi"],"Avant-bras":["fa"],"Grand dorsal":["lat"],"Rhomboïdes":["rhom"],
+"Trapèzes":["trap"],"Lombaires":["lumb"],"Abdominaux":["abs"],"Obliques":["obl"],
+"Transverse":["trans"],"Quadriceps":["quad"],"Fessiers":["glute"],
+"Ischio-jambiers":["ham"],"Mollets":["calf"],"Épaules":["delt-a","delt-m"]
+};
+
+// ═══════════════════════════════════════════════════════════════════
+// 🗂️ VARIABLES GLOBALES PRINCIPALES
+// ═══════════════════════════════════════════════════════════════════
+
+// CATS : Liste de toutes les catégories d'exercices (créée automatiquement à partir de DB)
+// Affichée comme filtres lors de la consultation de la bibliothèque
+var CATS=["Tous"].concat(Array.from(new Set(DB.map(function(e){return e.cat}))));
+
+// activeCat : La catégorie de filtre sélectionnée actuellement dans la bibliothèque
+var activeCat="Tous";
+
+// routines : Toutes les routines que l'utilisateur a créées (sauvegardées localement)
+// Chaque routine contient son nom et une liste d'exercices configurés
+var routines=JSON.parse(localStorage.getItem('ft_routines')||'[]');
+
+// hist : L'historique COMPLET de tous les entraînements faits par l'utilisateur
+// Chaque entrée sauvegarde la date, la durée, les exercices faits, les muscles travaillés, etc.
+var hist=JSON.parse(localStorage.getItem('ft_history')||'[]');
+
+// Variables pour l'ÉDITION des routines
+var editIdx=null;              // Index de la routine en édition (null = créer une nouvelle)
+var editExercises=[];          // Liste d'exercices en cours d'édition dans une routine
+var pendingEx=null;            // Exercice en attente de configuration avant d'être ajouté
+var cfgType='reps';            // Type de configuration: 'reps' (séries/reps) ou 'time' (chrono)
+
+// Variables pour la SÉANCE ACTIVE en cours
+var activeSession=null;        // Objet de la séance en cours (null = aucune séance)
+var sessInterval=null;         // Timer qui met à jour le chrono chaque seconde
+var exTimers={};               // Timers pour chaque exercice en mode chrono
+var audioCtx=null;             // Contexte audio pour jouer les sons
+
+
+// ═══════════════════════════════════════════════════════════════════
+// ⏱️ FONCTIONS UTILITAIRES GÉNÉRALES
+// ═══════════════════════════════════════════════════════════════════
+
+// pad(n) : Ajoute un zéro devant les nombres < 10
+// Exemple: pad(5) = "05", pad(12) = "12"
+// Utilisé pour afficher les temps au format HH:MM:SS
+function pad(n){return String(n).padStart(2,'0')}
+
+// fmt(s) : Convertit un nombre de SECONDES en format "MM:SS"
+// Exemple: fmt(125) = "02:05" (2 minutes 5 secondes)
+// Utilisé partout pour afficher les durées d'exercices
+function fmt(s){return pad(Math.floor(s/60))+':'+pad(s%60)}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🔊 AUDIO & VIBRATION
+// ═══════════════════════════════════════════════════════════════════
+
+// playSound() : Joue un BIP + vibre quand un exercice en CHRONO se termine
+// Crée une onde sonore à ~440Hz (do musical) pendant 200ms
+// Vibre aussi le téléphone en 5 petites secousses pour une notif tactile
+function playSound(){
+  try{if(navigator.vibrate)navigator.vibrate([200,50,100,50,200])}catch(e){}
+  try{
+    if(!audioCtx){audioCtx=new(window.AudioContext||window.webkitAudioContext)()}
+    var now=audioCtx.currentTime;
+    var osc=audioCtx.createOscillator();
+    var gain=audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.type='sine';
+    osc.frequency.setValueAtTime(440,now);
+    osc.frequency.setValueAtTime(523,now+0.05);
+    gain.gain.setValueAtTime(0.3,now);
+    gain.gain.setValueAtTime(0.1,now+0.15);
+    osc.start(now);
+    osc.stop(now+0.2);
+  }catch(e){console.log('Son non disponible:',e.message)}
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 💾 SAUVEGARDE DES DONNÉES
+// ═══════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════
+// 💾 saveData()
+// Sauvegarde toutes les données dans la mémoire du navigateur (localStorage).
+//
+// QU'EST-CE QUE LE LOCALSTORAGE ?
+//   C'est un espace de stockage dans ton navigateur, comme une mini base de
+//   données. Les données y restent même si tu fermes l'app ou le navigateur.
+//   Chaque donnée est stockée sous forme de texte (JSON = format texte structuré)
+//
+// CE QUI EST SAUVEGARDÉ :
+//   - 'ft_routines' : toutes tes routines (nom, exercices, séries, poids...)
+//   - 'ft_history'  : tout l'historique de tes séances
+//
+// QUAND EST-ELLE APPELÉE ?
+//   À chaque fois que des données changent : ajout/modification/suppression
+//   d'une routine, fin d'une séance enregistrée, modification du profil.
+//
+// MODIFIER : Pour sauvegarder une nouvelle donnée, ajoute une ligne :
+//   localStorage.setItem('ma_cle', JSON.stringify(maDonnee));
+//   Et pour la récupérer au chargement, ajoute dans les variables globales :
+//   var maDonnee = JSON.parse(localStorage.getItem('ma_cle') || 'valeur_par_defaut');
+// ════════════════════════════════════════════════════════════════════
+function saveData(){
+  // JSON.stringify() convertit un objet JS en texte pour le stocker
+  localStorage.setItem('ft_routines', JSON.stringify(routines));
+  localStorage.setItem('ft_history',  JSON.stringify(hist));
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🏋️ AFFICHAGE DES DÉTAILS D'UN EXERCICE
+// ═══════════════════════════════════════════════════════════════════
+
+// openExerciseDetailModal(id) : Ouvre une POP-UP avec tous les détails d'un exercice
+// Affiche: l'image, les muscles principaux/secondaires, l'équipement, la catégorie
+// Peut être appelée depuis l'historique, la bibliothèque, ou pendant une séance
+function openExerciseDetailModal(id) {
+  var e = DB.find(function(x) { return x.id === id; });
+  if (!e) return;
+  
+  // Crée une modale dynamique
+  var modalHtml = '<div class="modal-bg" id="modal-ex-detail" style="z-index:300">'
+    + '<div class="modal">'
+    + '<button class="back-btn" onclick="closeExerciseDetailModal()">← Fermer</button>'
+    + '<img src="' + (e.image || '') + '" style="width:100%;height:auto;border-radius:var(--radius);margin-bottom:12px;max-height:300px;object-fit:cover"/>'
+    + '<div class="card">'
+    + '<div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px">' + e.name + '</div>'
+    + '<div style="margin-bottom:10px"><span class="tag tag-cat">' + e.cat + '</span><span class="tag tag-equip">' + e.equip + '</span></div>'
+    + '<div class="section-label">Muscles ciblés</div>'
+    + '<div style="display:flex;gap:12px;align-items:flex-start">'
+    + buildSVG(e.muscles, e.sec, 75, 140)
+    + '<div style="flex:1;padding-top:4px">'
+    + '<div style="font-size:10px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Principal</div>'
+    + e.muscles.map(function(m) { return '<div style="font-size:12px;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></span>' + m + '</div>'; }).join('')
+    + (e.sec.length ? '<div style="font-size:10px;color:var(--text3);margin:8px 0 5px;text-transform:uppercase;letter-spacing:.5px">Secondaire</div>' + e.sec.map(function(m) { return '<div style="font-size:12px;color:var(--text2);margin-bottom:4px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#1DAB67;opacity:.5;flex-shrink:0"></span>' + m + '</div>'; }).join('') : '')
+    + '</div></div></div>'
+    + '</div></div>';
+  
+  // Ajoute la modale au DOM
+  var existingModal = document.getElementById('modal-ex-detail');
+  if (existingModal) existingModal.remove();
+  var tempDiv = document.createElement('div');
+  tempDiv.innerHTML = modalHtml;
+  document.body.appendChild(tempDiv.firstElementChild);
+}
+
+function closeExerciseDetailModal() {
+  var modal = document.getElementById('modal-ex-detail');
+  if (modal) modal.remove();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🔄 NAVIGATION ENTRE LES ÉCRANS PRINCIPAUX
+// ═══════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════
+// 🔄 goTo(id, btn)
+// Change l'écran affiché (Accueil, Routines, Exercices, Profil/Stats).
+//
+// PARAMÈTRES :
+//   id  = identifiant de l'écran cible ('home', 'routines', 'biblio', 'profil')
+//   btn = le bouton de navigation cliqué (reçoit la classe 'active')
+//
+// COMMENT ÇA MARCHE :
+//   Les 4 écrans existent TOUJOURS dans la page HTML.
+//   Seul l'écran actif a la classe CSS "active" qui le rend visible.
+//   Les autres ont display:none (cachés).
+//
+//   À chaque changement d'écran, on :
+//     1. Retire "active" de TOUS les écrans (tous cachés)
+//     2. Retire "active" de tous les boutons de nav (tous grisés)
+//     3. Ajoute "active" à l'écran cible (visible)
+//     4. Ajoute "active" au bouton cliqué (surligné)
+//     5. Rafraîchit les données de l'écran (renderHome, renderBiblio...)
+//
+// AJOUTER UN ÉCRAN :
+//   1. Crée un <div id="mon-ecran" class="screen"> dans le HTML
+//   2. Ajoute un bouton dans la barre de nav : onclick="goTo('mon-ecran', this)"
+//   3. Ajoute if(id==='mon-ecran') renderMonEcran(); ci-dessous
+//   4. Crée la fonction renderMonEcran() dans le JS
+// ════════════════════════════════════════════════════════════════════
+function goTo(id,btn){
+  // Masquer tous les écrans (retirer la classe 'active')
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});
+  // Retirer la surbrillance de tous les boutons de navigation
+  document.querySelectorAll('.nav-btn').forEach(function(b){b.classList.remove('active')});
+  // Afficher l'écran demandé (ajouter la classe 'active')
+  document.getElementById(id).classList.add('active');
+  // Mettre le bouton en surbrillance
+  if(btn)btn.classList.add('active');
+  // Rafraîchir les données affichées selon l'écran choisi
+  if(id==='home')renderHome();
+  if(id==='routines')renderRoutineList();
+  if(id==='biblio')renderBiblio();
+  if(id==='profil')renderProfil();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🏠 ÉCRAN D'ACCUEIL - AFFICHAGE & MIS À JOUR
+// ═══════════════════════════════════════════════════════════════════
+
+// ════════════════════════════════════════════════════════════════════
+// 🏠 renderHome()
+// Met à jour l'écran d'accueil avec les données les plus récentes.
+//
+// COMMENT ÇA MARCHE :
+//   1. Lit "hist" (le tableau de l'historique) pour compter les séances
+//   2. Affiche le total et celles du mois en cours
+//   3. Affiche une carte pour la DERNIÈRE séance (dernier élément de "hist")
+//      avec : nom de la routine, date, nb exercices faits, muscles travaillés
+//
+// MODIFIER : Pour ajouter une info sur l'accueil, ajoute du HTML dans
+//            la variable "el.innerHTML" à la fin de cette fonction.
+// ════════════════════════════════════════════════════════════════════
+function renderHome(){
+  var now=new Date();
+  // Affiche le NOMBRE TOTAL de séances enregistrées
+  document.getElementById('st-total').textContent=hist.length;
+  // Affiche le nombre de séances CE MOIS-CI (filtre par mois et année actuelle)
+  document.getElementById('st-month').textContent=hist.filter(function(h){var d=new Date(h.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()}).length;
+  // Affiche les infos de la DERNIÈRE SÉANCE (si elle existe)
+  // Montre: le nom de la routine, la date, les exercices faits, les muscles travaillés
+  // Dernière séance
+  var el=document.getElementById('home-last-session');
+  if(!hist.length){
+    el.innerHTML='<div class="card"><div class="card-sub" style="text-align:center;padding:8px 0">Aucune séance enregistrée pour l\'instant.</div></div>';
+    return;
+  }
+  var last=hist[hist.length-1];
+  var d=new Date(last.date);
+  var muscles=(last.muscles||[]).slice(0,4).map(function(m){return '<span class="tag tag-muscle">'+m+'</span>'}).join('');
+  el.innerHTML='<div class="card">'
+    +'<div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px">'+last.routineName+'</div>'
+    +'<div style="font-size:11px;color:var(--text2);margin-bottom:6px">'+d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})+' &middot; '+fmt(last.duration)+'</div>'
+    +'<div style="font-size:11px;color:var(--text2);margin-bottom:6px">'+last.doneCount+'/'+last.totalCount+' exercices réalisés</div>'
+    +'<div>'+muscles+'</div>'
+    +'</div>';
+}
+// ════════════════════════════════════════════════════════════════════
+// 📋 renderRoutineList()
+// Affiche la liste de toutes tes routines dans l'onglet "Routines".
+// Appelée automatiquement chaque fois qu'on navigue vers cet onglet.
+//
+// COMMENT ÇA MARCHE :
+//   1. On cache les vues "détail" et "édition" (pour n'afficher que la liste)
+//   2. Si aucune routine → on affiche un message vide
+//   3. Sinon → on trie les routines par ordre alphabétique
+//   4. Pour chaque routine, on crée une carte HTML avec :
+//      - Le nom et le nombre d'exercices (cliquable pour voir le détail)
+//      - 4 boutons : Modifier / Dupliquer / Supprimer / ▶ (démarrer)
+// ════════════════════════════════════════════════════════════════════
+function renderRoutineList(){
+  // Afficher la vue "liste", masquer les autres vues (détail, édition)
+  document.getElementById('routine-list-view').style.display='';
+  document.getElementById('routine-detail-view').style.display='none';
+  document.getElementById('routine-edit-view').style.display='none';
+  
+  var el=document.getElementById('routines-list');
+  // Si aucune routine, afficher un message
+  if(!routines.length){el.innerHTML='<div class="empty">Aucune routine.</div>';return}
+  
+  // Trier les routines par ordre alphabétique
+  routines.sort(function(a,b){return a.name.localeCompare(b.name)});
+  
+  // Créer une carte pour CHAQUE routine avec ses boutons d'actions
+  el.innerHTML=routines.map(function(r,i){
+    return '<div class="routine-card">'
+      // Clic sur la routine -> affiche le détail
+      +'<div style="cursor:pointer;flex:1" onclick="viewRoutine('+i+')">'
+        +'<div class="routine-name">'+r.name+'</div>'
+        +'<div class="routine-meta">'+r.exercises.length+' exercice'+(r.exercises.length!==1?'s':'')+'</div>'
+      +'</div>'
+      // Boutons d'actions
+      +'<div class="routine-actions">'
+        +'<button class="btn btn-sm" onclick="editRoutine('+i+')">Modifier</button>'
+        +'<button class="btn btn-sm" onclick="duplicateRoutine('+i+')">Dupliquer</button>'
+        +'<button class="btn btn-sm btn-danger" onclick="deleteRoutine('+i+')">Supprimer</button>'
+        +'<button class="fab" onclick="launchSession('+i+')" style="margin-left:auto">&#9654;</button>'
+      +'</div>'
+    +'</div>'
+  }).join('');
+
+}
+// ═══════════════════════════════════════════════════════════════════
+// 📋 AFFICHAGE DU DÉTAIL D'UNE ROUTINE
+// ═══════════════════════════════════════════════════════════════════
+
+// viewRoutine(i) : Affiche les détails d'une routine (liste des exercices)
+// PARAMÈTRE: i = index de la routine dans le tableau 'routines'
+function viewRoutine(i){
+  var r=routines[i];
+  document.getElementById('routine-list-view').style.display='none';
+  document.getElementById('routine-detail-view').style.display='';
+  var html='<div class="card"><div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:2px">'+r.name+'</div><div style="font-size:11px;color:var(--text2);margin-bottom:10px">'+r.exercises.length+' exercice'+(r.exercises.length!==1?'s':'')+'</div></div>';
+  // Affiche chaque exercice avec ses paramètres (séries, reps, poids, etc.)
+  html+=r.exercises.map(function(ex){
+    var dbEx=DB.find(function(d){return d.name===ex.name});
+    var exImage=dbEx&&dbEx.image?dbEx.image:'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%23555" width="40" height="40"/><text x="20" y="25" text-anchor="middle" fill="white" font-size="20">💪</text></svg>';
+    var config=ex.type==='time'
+      ? ex.sets+' &times; '+ex.duration+'s'
+      : ex.sets+' &times; '+ex.reps+(ex.weight>0?' &middot; '+ex.weight+'kg':'');
+    return '<div class="card" style="cursor:pointer" onclick="openExerciseDetailModal(' + (dbEx ? dbEx.id : 0) + ')"><div style="display:flex; gap:10px; align-items:center; margin-bottom:6px"><img src="'+exImage+'" class="ex-thumb" alt="'+ex.name+'"><div style="font-size:13px;font-weight:500;color:var(--text)">'+ex.name+'</div></div>'
+      +(ex.notes?'<div style="background:rgba(79,142,247,0.08);border:1px solid rgba(79,142,247,0.15);border-radius:6px;padding:6px 8px;margin-bottom:8px;font-size:11px;color:var(--text2)">'+ex.notes+'</div>':'')
+      +'<div style="font-size:12px;color:var(--text2);margin-bottom:6px">'+config+(ex.rest>0?' &middot; Repos '+ex.rest+'s':'')+'</div>'
+      +'<div>'+ex.muscles.map(function(m){return '<span class="tag tag-muscle">'+m+'</span>'}).join('')+'</div></div>'
+  }).join('');
+  document.getElementById('routine-detail-content').innerHTML=html;
+}
+// closeRoutineView() : Ferme la vue détail et retourne à la liste des routines
+function closeRoutineView(){
+  document.getElementById('routine-detail-view').style.display='none';
+  document.getElementById('routine-list-view').style.display='';
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ✏️ ÉDITION DES ROUTINES
+// ═══════════════════════════════════════════════════════════════════
+
+// duplicateRoutine(i) : Crée une copie d'une routine existante
+// Utile pour créer rapidement une variante d'une routine
+function duplicateRoutine(i){
+  var r=routines[i];
+  var copy={name:r.name+' (copie)',exercises:r.exercises.map(function(e){return Object.assign({},e)})};
+  routines.push(copy);
+  saveData();
+  renderRoutineList();
+}
+
+// openCreateRoutine() : Prépare l'édition pour créer une NOUVELLE routine
+function openCreateRoutine(){
+  editIdx=null;  // null = création, pas modification
+  editExercises=[];  // Commence avec aucun exercice
+  document.getElementById('routine-name-input').value='';
+  document.getElementById('routine-list-view').style.display='none';
+  document.getElementById('routine-edit-view').style.display='';
+  renderEditExercises()
+}
+
+// editRoutine(i) : Prépare l'édition pour MODIFIER une routine existante
+// PARAMÈTRE: i = index de la routine à modifier
+function editRoutine(i){
+  editIdx=i;  // Sauvegarde l'index pour la sauvegarde
+  editExercises=routines[i].exercises.map(function(e){return Object.assign({},e)});
+  document.getElementById('routine-name-input').value=routines[i].name;
+  document.getElementById('routine-list-view').style.display='none';
+  document.getElementById('routine-edit-view').style.display='';
+  renderEditExercises()
+}
+
+// closeRoutineEdit() : Ferme l'édition et retourne à la liste des routines
+function closeRoutineEdit(){
+  document.getElementById('routine-list-view').style.display='';
+  document.getElementById('routine-edit-view').style.display='none';
+  renderRoutineList()
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// 🎯 DRAG & DROP DES EXERCICES
+// ═══════════════════════════════════════════════════════════════════
+// Permet de réordonner les exercices dans une routine en les glissant-déposant
+
+var draggedExIndex = null;  // Index de l'exercice en cours de déplacement
+
+// dragStart(i) : Démarre le drag d'un exercice
+// PARAMÈTRE: i = index de l'exercice à déplacer
+// Rend l'exercice semi-transparent pour indiquer qu'il est sélectionné
+function dragStart(i) {
+  draggedExIndex = i;
+  var el = document.getElementById('ex-' + i);
+  if (el) el.style.opacity = '0.5';
+}
+
+// dragOver(e) : Permet le drop en empêchant le comportement par défaut
+function dragOver(e) {
+  e.preventDefault();  // Important pour permettre le drop
+  e.dataTransfer.dropEffect = 'move';
+}
+
+// dropEx(targetIdx) : Dépose l'exercice dragué sur une nouvelle position
+// Échange les deux exercices dans le tableau editExercises
+// PARAMÈTRE: targetIdx = index de la position de destination
+function dropEx(targetIdx) {
+  if (draggedExIndex === null || draggedExIndex === targetIdx) return;
+  
+  // Échanger les deux exercices dans le tableau
+  [editExercises[draggedExIndex], editExercises[targetIdx]] = 
+  [editExercises[targetIdx], editExercises[draggedExIndex]];
+  
+  // Rafraîchir l'affichage après l'échange
+  renderEditExercises();
+}
+
+// dragEnd() : Finit le drag et remet tous les exercices à l'opacité normale
+function dragEnd() {
+  draggedExIndex = null;
+  document.querySelectorAll('#routine-exercises-edit .card').forEach(function(el){
+    el.style.opacity = '1';
+  });
+}
+// ════════════════════════════════════════════════════════════════════
+// ✏️ renderEditExercises()
+// Affiche la liste des exercices dans l'éditeur de routine.
+// Appelée chaque fois que la liste d'exercices change (ajout, suppression,
+// modification d'une série, drag & drop...).
+//
+// CONCEPT CLÉ — seriesList :
+//   Chaque exercice contient un tableau "seriesList" qui est la liste de
+//   ses séries individuelles. Chaque série a ses propres reps, poids et repos.
+//   Exemple : un exercice avec 3 séries différentes :
+//     seriesList = [
+//       { reps:12, weight:60, restSec:60 },  // Série 1
+//       { reps:10, weight:65, restSec:60 },  // Série 2 (plus lourd)
+//       { reps:8,  weight:70, restSec:90 },  // Série 3 (encore plus lourd)
+//     ]
+//
+// STRUCTURE D'UNE CARTE D'EXERCICE (de haut en bas) :
+//   1. En-tête : image ronde + nom + bouton supprimer (✕)
+//   2. Zone de notes (textarea libre)
+//   3. En-tête du tableau : colonnes Reps / Poids / Repos
+//   4. Lignes de séries : une ligne par série avec ses champs
+//   5. Bouton "+ Ajouter une série"
+//   6. Tags des muscles travaillés
+//
+// DRAG & DROP : Chaque carte est "draggable" pour être réordonnée.
+//   Les fonctions dragStart/dragOver/dropEx/dragEnd gèrent ce comportement.
+//
+// MODIFIER :
+//   - Pour changer les champs d'une série → modifie la variable seriesRows
+//   - Pour changer l'affichage de l'en-tête → modifie la section "En-tête"
+//   - Pour ajouter un champ global (ex: vitesse) → ajoute-le après les seriesRows
+// ════════════════════════════════════════════════════════════════════
+function renderEditExercises(){
+  /* Affiche chaque exercice dans l'éditeur de routine.
+     Chaque exercice montre ses séries INDIVIDUELLES avec reps, poids, repos propres. */
+  var el = document.getElementById('routine-exercises-edit');
+  if(!editExercises.length){
+    el.innerHTML = '<div class="empty" style="padding:14px">Aucun exercice. Ajoutes-en !</div>';
+    return;
+  }
+  el.innerHTML = editExercises.map(function(ex, i){
+    // Image ronde de l'exercice (fallback emoji)
+    var dbEx = DB.find(function(d){ return d.name === ex.name; });
+    var img = (dbEx && dbEx.image) ? dbEx.image
+      : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%23333" width="40" height="40" rx="20"/><text x="20" y="26" text-anchor="middle" fill="white" font-size="18">💪</text></svg>';
+
+    // S'assurer que seriesList existe (migration des anciens exercices sans seriesList)
+    if(!ex.seriesList || !ex.seriesList.length){
+      ex.seriesList = [];
+      for(var s = 0; s < (ex.sets || 3); s++){
+        ex.seriesList.push(ex.type === 'time'
+          ? { duration: ex.duration||60, restSec: ex.rest||60 }
+          : { reps: ex.reps||10, weight: ex.weight||0, restSec: ex.rest||60 });
+      }
+    }
+
+    // Lignes de séries individuelles
+    var seriesRows = ex.seriesList.map(function(s, si){
+      var repsCol = ex.type === 'time'
+        ? '<div style="text-align:center"><input type="number" class="serie-input" value="'+(s.duration||60)+'" min="5" max="3600" onchange="updSerie('+i+','+si+',\'duration\',+this.value)" title="Durée (secondes)"/><span class="serie-label">sec</span></div>'
+        : '<div style="text-align:center"><input type="number" class="serie-input" value="'+(s.reps||10)+'" min="1" max="200" onchange="updSerie('+i+','+si+',\'reps\',+this.value)" title="Répétitions"/><span class="serie-label">reps</span></div>';
+      var weightCol = ex.type !== 'time'
+        ? '<div style="text-align:center"><input type="number" class="serie-input" value="'+(s.weight||0)+'" min="0" max="500" step="0.5" onchange="updSerie('+i+','+si+',\'weight\',+this.value)" title="Poids (kg)"/><span class="serie-label">kg</span></div>'
+        : '<div style="width:52px"></div>';
+      var delBtn = ex.seriesList.length > 1
+        ? '<button class="serie-del" onclick="delSerie('+i+','+si+')" title="Supprimer">×</button>'
+        : '<div style="width:22px"></div>';
+      return '<div class="serie-row">'
+        + '<span class="serie-num">S'+(si+1)+'</span>'
+        + repsCol + weightCol
+        + '<div style="text-align:center"><input type="number" class="serie-input" value="'+(s.restSec||60)+'" min="0" max="600" step="5" onchange="updSerie('+i+','+si+',\'restSec\',+this.value)" title="Repos (secondes)"/><span class="serie-label">repos s</span></div>'
+        + delBtn
+      + '</div>';
+    }).join('');
+
+    return '<div class="card" draggable="true" ondragstart="dragStart('+i+')" ondragover="dragOver(event)" ondrop="dropEx('+i+')" ondragend="dragEnd()" style="margin-bottom:10px;opacity:1" id="ex-'+i+'">'
+      // En-tête : image ronde + nom + bouton supprimer
+      + '<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'
+        + '<img src="'+img+'" style="width:42px;height:42px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg3)" alt="'+ex.name+'"/>'
+        + '<div style="flex:1;font-size:13px;font-weight:600;color:var(--text)">'+ex.name+'</div>'
+        + '<button class="btn-icon" onclick="remEx('+i+')" style="color:var(--red);font-size:13px;border-color:rgba(224,82,82,0.3)" title="Supprimer">✕</button>'
+      + '</div>'
+      // Notes
+      + '<div style="background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 9px;margin-bottom:10px">'
+        + '<label style="font-size:10px;color:var(--text3);margin-bottom:3px">📝 Notes</label>'
+        + '<textarea style="width:100%;padding:4px;border:none;font-size:12px;background:transparent;color:var(--text);margin-bottom:0;font-family:\'DM Sans\',sans-serif;outline:none;resize:none;min-height:36px;max-height:80px;overflow-y:auto" placeholder="Conseils, variantes..." oninput="updEx('+i+',\'notes\',this.value);this.style.height=\'auto\';this.style.height=this.scrollHeight+\'px\'">'+( ex.notes||'')+'</textarea>'
+      + '</div>'
+      // En-tête colonnes
+      + '<div style="display:flex;gap:6px;padding:0 0 4px;border-bottom:1px solid var(--border);margin-bottom:2px">'
+        + '<div style="width:22px"></div>'
+        + '<div style="width:52px;font-size:9px;color:var(--text3);text-align:center;text-transform:uppercase;letter-spacing:.5px">'+(ex.type==='time'?'Durée':'Reps')+'</div>'
+        + (ex.type !== 'time' ? '<div style="width:52px;font-size:9px;color:var(--text3);text-align:center;text-transform:uppercase;letter-spacing:.5px">Poids</div>' : '<div style="width:52px"></div>')
+        + '<div style="width:52px;font-size:9px;color:var(--text3);text-align:center;text-transform:uppercase;letter-spacing:.5px">Repos</div>'
+        + '<div style="width:22px"></div>'
+      + '</div>'
+      // Séries
+      + seriesRows
+      // Bouton ajouter une série
+      + '<button class="btn-add-serie" onclick="addSerie('+i+')">+ Ajouter une série</button>'
+      // Tags muscles
+      + '<div style="margin-top:8px">'+ex.muscles.slice(0,3).map(function(m){ return '<span class="tag tag-muscle">'+m+'</span>'; }).join('')+'</div>'
+    + '</div>';
+  }).join('');
+}
+
+/* updSerie — modifie une propriété d'une série individuelle */
+function updSerie(exIdx, si, field, val){
+  if(editExercises[exIdx] && editExercises[exIdx].seriesList[si]){
+    editExercises[exIdx].seriesList[si][field] = val;
+    editExercises[exIdx].sets = editExercises[exIdx].seriesList.length;
+  }
+}
+/* addSerie — ajoute une série (copie les valeurs de la dernière) */
+// ════════════════════════════════════════════════════════════════════
+// ➕ addSerie(exIdx)
+// Ajoute une nouvelle série à un exercice dans l'éditeur de routine.
+// Appelée quand l'utilisateur clique sur "+ Ajouter une série".
+//
+// ASTUCE : La nouvelle série copie les valeurs de la DERNIÈRE série existante.
+// Ainsi si tu faisais 10 reps à 60kg, la nouvelle série commence pareil.
+// Tu n'as qu'à modifier ce qui change (ex: le poids).
+// ════════════════════════════════════════════════════════════════════
+function addSerie(exIdx){
+  var ex = editExercises[exIdx];
+  var last = ex.seriesList[ex.seriesList.length-1];
+  ex.seriesList.push(ex.type === 'time'
+    ? { duration: last?last.duration:60, restSec: last?last.restSec:60 }
+    : { reps: last?last.reps:10, weight: last?last.weight:0, restSec: last?last.restSec:60 });
+  ex.sets = ex.seriesList.length;
+  renderEditExercises();
+}
+/* delSerie — supprime une série (min 1 conservée) */
+// ════════════════════════════════════════════════════════════════════
+// ➖ delSerie(exIdx, si)
+// Supprime une série d'un exercice dans l'éditeur.
+// Bloquée si l'exercice n'a qu'une seule série (minimum requis).
+// ════════════════════════════════════════════════════════════════════
+function delSerie(exIdx, si){
+  var ex = editExercises[exIdx];
+  if(ex.seriesList.length <= 1) return;
+  ex.seriesList.splice(si, 1);
+  ex.sets = ex.seriesList.length;
+  renderEditExercises();
+}
+
+// updEx(i, field, value) : Met à jour UNE PROPRIÉTÉ d'un exercice en édition
+// PARAMÈTRES: i = index, field = propriété à modifier, value = nouvelle valeur
+function updEx(i,f,v){editExercises[i][f]=v}
+
+// remEx(i) : Supprime un exercice de la liste d'édition
+// PARAMÈTRE: i = index de l'exercice à supprimer
+function remEx(i){editExercises.splice(i,1);renderEditExercises()}
+
+// saveRoutine() : Enregistre la routine créée ou modifiée
+// Valide que la routine a un nom et au moins un exercice
+// Sauvegarde dans le tableau 'routines' et dans le localStorage
+function saveRoutine(){
+  var name=document.getElementById('routine-name-input').value.trim();
+  // Validation: nom obligatoire
+  if(!name){alert('Donne un nom à ta routine !');return}
+  // Validation: au moins un exercice
+  if(!editExercises.length){alert('Ajoute au moins un exercice !');return}
+  
+  // Créer l'objet routine
+  var r={name:name,exercises:editExercises};
+  
+  // Ajouter ou modifier selon qu'on crée ou édite
+  if(editIdx===null)
+    routines.push(r);  // Création = ajouter au tableau
+  else
+    routines[editIdx]=r;  // Modification = remplacer dans le tableau
+  
+  // Sauvegarder et retourner à la liste
+  saveData();
+  closeRoutineEdit();
+}
+
+// deleteRoutine(i) : Supprime une routine complètement
+// PARAMÈTRE: i = index de la routine à supprimer
+function deleteRoutine(i){
+  if(confirm('Supprimer cette routine ?')){
+    routines.splice(i,1);
+    saveData();
+    renderRoutineList()
+  }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// 🏋️ AJOUT D'EXERCICES À UNE ROUTINE (depuis la bibliothèque)
+// ═══════════════════════════════════════════════════════════════════
+
+// openModalAddEx() : Ouvre la modale pour chercher et ajouter un exercice
+// Flag global : true quand on ajoute un exercice pendant une séance active
+// false quand on l'ajoute depuis l'éditeur de routine
+var isAddingToSession = false;
+
+function openModalAddEx(){
+  // Détecter si on est en séance active ou dans l'éditeur de routine
+  isAddingToSession = (activeSession !== null);
+  document.getElementById('modal-search').value='';
+  document.getElementById('modal-add-ex').classList.add('open');
+  renderModalBiblio();
+}
+
+// closeModalAddEx() : Ferme la modale d'ajout d'exercice
+function closeModalAddEx(){
+  document.getElementById('modal-add-ex').classList.remove('open')
+}
+
+// renderModalBiblio() : Affiche les exercices filtrés dans la modale d'ajout
+// Permet de chercher rapidement un exercice par nom ou muscle
+function renderModalBiblio(){
+  var q=(document.getElementById('modal-search').value||'').toLowerCase();
+  // Filtrer les exercices selon la recherche
+  var items=DB.filter(function(e){
+    return !q||e.name.toLowerCase().includes(q)||e.cat.toLowerCase().includes(q)||e.muscles.join(' ').toLowerCase().includes(q)
+  });
+  // Trier alphabétiquement
+  items.sort(function(a,b){return a.name.localeCompare(b.name)});
+  
+  // Afficher chaque exercice avec bouton pour le sélectionner
+  document.getElementById('modal-biblio-list').innerHTML=items.map(function(e){
+    return '<div class="ex-card" onclick="selEx('+e.id+')">'
+      +'<div style="display:flex; gap:10px; align-items:center">'
+        +'<img src="'+(e.image||'data:image/svg+xml;utf8,<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 40 40\"><rect fill=\"%23555\" width=\"40\" height=\"40\"/><text x=\"20\" y=\"25\" text-anchor=\"middle\" fill=\"white\" font-size=\"20\">💪</text></svg>')+'" class="ex-thumb" alt="'+e.name+'">'
+        +'<div class="ex-card-name">'+e.name+'</div>'
+      +'</div>'
+      +'<div><span class="tag tag-cat">'+e.cat+'</span><span class="tag tag-equip">'+e.equip+'</span>'+(e.timed?'<span class="tag" style="background:rgba(245,166,35,0.1);color:#D4913A;border:1px solid rgba(245,166,35,0.2)">&#8987; Chrono</span>':'')+'</div>'
+    +'</div>'
+  }).join('');
+}
+
+// selEx(id) : Sélectionne un exercice et ouvre la modale de configuration
+// PARAMÈTRE: id = identifiant de l'exercice dans la DB
+// Ouvre une modale pour configurer les séries, reps, poids, durée, etc.
+function selEx(id){
+  pendingEx=DB.find(function(e){return e.id===id});
+  closeModalAddEx();
+  
+  // Remplir la modale de configuration avec les valeurs par défaut
+  document.getElementById('cfg-title').textContent=pendingEx.name;
+  setCfgType(pendingEx.timed?'time':'reps');  // Déterminer le type automatiquement
+  document.getElementById('cfg-sets').value='3';
+  document.getElementById('cfg-reps').value='10';
+  document.getElementById('cfg-weight').value='0';
+  document.getElementById('cfg-duration').value='60';
+  document.getElementById('cfg-tsets').value='1';
+  document.getElementById('cfg-rest').value='30';
+  
+  // Ouvrir la modale de configuration
+  document.getElementById('modal-cfg').classList.add('open');
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ⚙️ CONFIGURATION D'UN EXERCICE
+// ═══════════════════════════════════════════════════════════════════
+
+// setCfgType(t) : Change le type de configuration (reps ou time)
+// PARAMÈTRE: t = 'reps' ou 'time'
+// Affiche/masque les champs appropriés selon le type
+function setCfgType(t){
+  cfgType=t;
+  // Masquer/afficher les bons champs selon le type
+  document.getElementById('cfg-reps-fields').style.display=t==='reps'?'':'none';
+  document.getElementById('cfg-time-fields').style.display=t==='time'?'':'none';
+  // Mettre le bouton correct en surbrillance
+  document.getElementById('cfg-btn-reps').className='type-btn'+(t==='reps'?' active':'');
+  document.getElementById('cfg-btn-time').className='type-btn'+(t==='time'?' active':'');
+}
+
+// closeModalCfg() : Ferme la modale de configuration
+function closeModalCfg(){
+  document.getElementById('modal-cfg').classList.remove('open')
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ✅ confirmCfgEx()
+// Valide la configuration d'un exercice et l'ajoute à la routine en édition.
+// Appelée quand l'utilisateur clique sur "Ajouter" dans le modal de config.
+//
+// COMMENT ÇA MARCHE :
+//   1. Récupère pendingEx (l'exercice sélectionné dans la bibliothèque)
+//   2. Lit les valeurs des champs (séries, reps, poids OU durée)
+//   3. Lit le temps de repos
+//   4. Crée "seriesList" : un tableau avec UNE entrée par série,
+//      chacune avec les mêmes reps/poids/repos par défaut
+//   5. Ajoute l'exercice à editExercises et ferme le modal
+//
+// L'UTILISATEUR PEUT ENSUITE modifier chaque série individuellement
+// dans l'éditeur de routine (chaque ligne S1, S2, S3...).
+// ════════════════════════════════════════════════════════════════════
+function confirmCfgEx(){
+  /* Ajoute l'exercice configuré à la routine en cours d'édition.
+     Crée seriesList selon le nombre de séries choisi. */
+  if(!pendingEx) return;
+  var ex = Object.assign({}, pendingEx, { type: cfgType });
+  if(cfgType === 'reps'){
+    ex.sets   = parseInt(document.getElementById('cfg-sets').value)  || 3;
+    ex.reps   = parseInt(document.getElementById('cfg-reps').value)  || 10;
+    ex.weight = parseFloat(document.getElementById('cfg-weight').value) || 0;
+  } else {
+    ex.duration = parseInt(document.getElementById('cfg-duration').value) || 60;
+    ex.sets     = parseInt(document.getElementById('cfg-tsets').value)    || 1;
+  }
+  ex.rest = parseInt(document.getElementById('cfg-rest').value) || 0;
+
+  // Créer la seriesList : une entrée par série configurée
+  ex.seriesList = [];
+  for(var s = 0; s < ex.sets; s++){
+    ex.seriesList.push(cfgType === 'time'
+      ? { duration: ex.duration||60, restSec: ex.rest||60 }
+      : { reps: ex.reps||10, weight: ex.weight||0, restSec: ex.rest||60 });
+  }
+
+  if(isAddingToSession && activeSession){
+    // ── CAS 1 : On est en séance → ajouter à activeSession.exercises ──
+    // Préparer la seriesList avec les propriétés de session (done, timers...)
+    var sessSeriesList = ex.seriesList.map(function(s){
+      return Object.assign({}, s, {
+        done: false,
+        timerSec: s.duration || ex.duration || 60,
+        timerRunning: false,
+        restRunning: false,
+        restRemaining: s.restSec || 0
+      });
+    });
+    var sessEx = Object.assign({}, ex, {
+      done: false,
+      origDur: ex.duration || 0,
+      timerSec: ex.type==='time' ? (ex.duration||60) : 0,
+      timerRunning: false,
+      seriesList: sessSeriesList,
+      addedDuringSess: true  // Flag pour checkAndProposeRoutineUpdate
+    });
+    activeSession.exercises.push(sessEx);
+    closeModalCfg();
+    renderSess(); // Rafraîchir l'écran de séance
+  } else {
+    // ── CAS 2 : On est dans l'éditeur de routine → comportement normal ──
+    editExercises.push(ex);
+    closeModalCfg();
+    renderEditExercises();
+  }
+  isAddingToSession = false; // Réinitialiser le flag
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// 📚 renderBiblio()
+// Affiche la bibliothèque d'exercices avec recherche et filtres.
+// Appelée à chaque frappe dans la barre de recherche et au changement de filtre.
+//
+// COMMENT ÇA MARCHE :
+//   1. Récupère le texte saisi dans la barre de recherche (en minuscules)
+//   2. Génère les boutons de filtres par catégorie (Tous, Poitrine, Dos...)
+//   3. Filtre les exercices de DB selon :
+//      - le texte cherché (nom, muscles, catégorie, équipement)
+//      - la catégorie active (activeCat)
+//   4. Trie les résultats par ordre alphabétique
+//   5. Affiche chaque exercice sous forme de carte cliquable
+//
+// MODIFIER : Pour changer ce qui est affiché dans chaque carte d'exercice
+//   de la bibliothèque, modifie le return '<div class="ex-card"...'
+//   à la fin de cette fonction.
+// ════════════════════════════════════════════════════════════════════
+function renderBiblio(){
+  // Texte saisi dans la barre de recherche, en minuscules pour comparer facilement
+  var q=(document.getElementById('search-input').value||'').toLowerCase();
+  document.getElementById('filter-row').innerHTML=CATS.map(function(c){return '<button class="filter-btn'+(activeCat===c?' active':'')+'" onclick="setCat(\''+c+'\')">'+c+'</button>'}).join('');
+  var items=DB.filter(function(e){
+    var mq=!q||e.name.toLowerCase().includes(q)||e.muscles.join(' ').toLowerCase().includes(q)||e.cat.toLowerCase().includes(q)||e.equip.toLowerCase().includes(q);
+    var mc=activeCat==='Tous'||e.cat===activeCat;
+    return mq&&mc;
+  });
+  items.sort(function(a,b){return a.name.localeCompare(b.name)}); // Tri alphabétique
+  document.getElementById('biblio-list').innerHTML=!items.length?'<div class="empty">Aucun résultat.</div>':items.map(function(e){
+    return '<div class="ex-card" onclick="openBiblioDetail('+e.id+')"><div style="display:flex; gap:10px; align-items:center"><img src="'+(e.image||'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%23555" width="40" height="40"/><text x="20" y="25" text-anchor="middle" fill="white" font-size="20">💪</text></svg>')+'" class="ex-thumb" alt="'+e.name+'"><div class="ex-card-name">'+e.name+'</div></div><div class="ex-card-muscles">'+e.muscles.join(', ')+'</div><div><span class="tag tag-cat">'+e.cat+'</span><span class="tag tag-equip">'+e.equip+'</span></div></div>'
+  }).join('');
+}
+function setCat(c){activeCat=c;renderBiblio()}
+
+function openBiblioDetail(id){
+  var e=DB.find(function(x){return x.id===id});
+  document.getElementById('biblio-main').style.display='none';
+  //un modale qui s'ouvre en cliquant sur un exercise
+  document.getElementById('biblio-detail').style.display='';
+  document.getElementById('detail-content').innerHTML='<img src="'+(e.image||'')+'" style="width:100%;height:auto;border-radius:var(--radius);margin-bottom:12px;max-height:300px;object-fit:cover"/><div class="card"><div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:4px">'+e.name+'</div><div style="margin-bottom:10px"><span class="tag tag-cat">'+e.cat+'</span><span class="tag tag-equip">'+e.equip+'</span></div><div class="section-label">Muscles ciblés</div><div style="display:flex;gap:12px;align-items:flex-start">'+buildSVG(e.muscles,e.sec,75,140)+'<div style="flex:1;padding-top:4px"><div style="font-size:10px;color:var(--text3);margin-bottom:5px;text-transform:uppercase;letter-spacing:.5px">Principal</div>'+e.muscles.map(function(m){return '<div style="font-size:12px;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></span>'+m+'</div>'}).join('')+(e.sec.length?'<div style="font-size:10px;color:var(--text3);margin:8px 0 5px;text-transform:uppercase;letter-spacing:.5px">Secondaire</div>'+e.sec.map(function(m){return '<div style="font-size:12px;color:var(--text2);margin-bottom:4px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#1DAB67;opacity:.5;flex-shrink:0"></span>'+m+'</div>'}).join(''):'')+'</div></div></div>';
+}
+function closeBiblioDetail(){document.getElementById('biblio-detail').style.display='none';document.getElementById('biblio-main').style.display=''}
+
+// ════════════════════════════════════════════════════════════════════
+// 🧍 buildSVG(primary, secondary, w, h)
+// Dessine le personnage SVG (silhouette humaine) avec les muscles colorés.
+// C'est la représentation visuelle des muscles travaillés.
+//
+// PARAMÈTRES :
+//   primary   = tableau des muscles PRINCIPAUX (colorés en vert vif)
+//   secondary = tableau des muscles SECONDAIRES (colorés en vert transparent)
+//   w, h      = largeur et hauteur du dessin en pixels
+//
+// COMMENT ÇA MARCHE :
+//   1. On consulte MMAP pour trouver quels éléments SVG correspondent aux muscles
+//   2. On colore ces éléments : vert = travaillé, transparent = non travaillé
+//   3. Le SVG est une série de formes géométriques (rect, ellipse, path)
+//      qui représentent chaque groupe musculaire
+//
+// MODIFIER LES COULEURS : Change les valeurs dans la fonction c(id) :
+//   - '#22C87A' = couleur des muscles principaux (vert)
+//   - 'rgba(34,200,122,0.4)' = couleur des muscles secondaires (vert transparent)
+//   - 'rgba(255,255,255,0.06)' = couleur des muscles non travaillés (gris)
+//
+// AJOUTER UN MUSCLE : Ajoute un nouveau path/rect/ellipse dans le SVG
+//   puis ajoute son id dans MMAP avec le nom du muscle correspondant.
+// ════════════════════════════════════════════════════════════════════
+function buildSVG(primary,secondary,w,h){
+  primary=primary||[];secondary=secondary||[];
+  var hi={};
+  primary.forEach(function(m){(MMAP[m]||[]).forEach(function(id){hi[id]='p'})});
+  secondary.forEach(function(m){(MMAP[m]||[]).forEach(function(id){if(!hi[id])hi[id]='s'})});
+  function c(id){return hi[id]==='p'?'#22C87A':hi[id]==='s'?'rgba(34,200,122,0.4)':'rgba(255,255,255,0.06)'}
+  function s(id){return hi[id]?'rgba(34,200,122,0.6)':'rgba(255,255,255,0.1)'}
+  return '<svg viewBox="0 0 80 155" width="'+w+'" height="'+h+'" xmlns="http://www.w3.org/2000/svg">'
+  +'<ellipse cx="40" cy="12" rx="8.5" ry="10" fill="rgba(255,255,255,0.07)" stroke="rgba(255,255,255,0.12)" stroke-width="0.5"/>'
+  +'<rect x="36.5" y="21" width="7" height="6" rx="2" fill="rgba(255,255,255,0.06)"/>'
+  +'<rect x="27" y="26" width="26" height="36" rx="5" fill="rgba(255,255,255,0.04)" stroke="rgba(255,255,255,0.07)" stroke-width="0.5"/>'
+  +'<path d="M30,22 Q36,20 40,21 Q44,20 50,22 Q48,28 40,29 Q32,28 30,22Z" fill="'+c('trap')+'" stroke="'+s('trap')+'" stroke-width="0.5"/>'
+  +'<path d="M27,28 Q34,26 40,28 Q40,38 37,41 Q32,39 27,36Z" fill="'+c('pec')+'" stroke="'+s('pec')+'" stroke-width="0.5"/>'
+  +'<path d="M53,28 Q46,26 40,28 Q40,38 43,41 Q48,39 53,36Z" fill="'+c('pec')+'" stroke="'+s('pec')+'" stroke-width="0.5"/>'
+  +'<ellipse cx="24.5" cy="32" rx="4" ry="5.5" fill="'+c('delt-a')+'" stroke="'+s('delt-a')+'" stroke-width="0.5"/>'
+  +'<ellipse cx="55.5" cy="32" rx="4" ry="5.5" fill="'+c('delt-a')+'" stroke="'+s('delt-a')+'" stroke-width="0.5"/>'
+  +'<ellipse cx="22.5" cy="34" rx="3" ry="4" fill="'+c('delt-m')+'" stroke="'+s('delt-m')+'" stroke-width="0.5"/>'
+  +'<ellipse cx="57.5" cy="34" rx="3" ry="4" fill="'+c('delt-m')+'" stroke="'+s('delt-m')+'" stroke-width="0.5"/>'
+  +'<ellipse cx="23" cy="36" rx="3" ry="3.5" fill="'+c('delt-p')+'" stroke="'+s('delt-p')+'" stroke-width="0.5"/>'
+  +'<ellipse cx="57" cy="36" rx="3" ry="3.5" fill="'+c('delt-p')+'" stroke="'+s('delt-p')+'" stroke-width="0.5"/>'
+  +'<rect x="32" y="40" width="16" height="20" rx="4" fill="'+c('abs')+'" stroke="'+s('abs')+'" stroke-width="0.5"/>'
+  +'<path d="M28,42 Q30,52 31,60 Q29,58 27,50Z" fill="'+c('obl')+'" stroke="'+s('obl')+'" stroke-width="0.5"/>'
+  +'<path d="M52,42 Q50,52 49,60 Q51,58 53,50Z" fill="'+c('obl')+'" stroke="'+s('obl')+'" stroke-width="0.5"/>'
+  +'<rect x="33" y="56" width="14" height="4" rx="2" fill="'+c('trans')+'" stroke="'+s('trans')+'" stroke-width="0.5"/>'
+  +'<rect x="18" y="37" width="6.5" height="18" rx="3.2" fill="'+c('bi')+'" stroke="'+s('bi')+'" stroke-width="0.5"/>'
+  +'<rect x="55.5" y="37" width="6.5" height="18" rx="3.2" fill="'+c('bi')+'" stroke="'+s('bi')+'" stroke-width="0.5"/>'
+  +'<path d="M17.5,37 Q14,42 15,54 Q19,52 19.5,43Z" fill="'+c('tri')+'" stroke="'+s('tri')+'" stroke-width="0.5"/>'
+  +'<path d="M62.5,37 Q66,42 65,54 Q61,52 60.5,43Z" fill="'+c('tri')+'" stroke="'+s('tri')+'" stroke-width="0.5"/>'
+  +'<rect x="16" y="55" width="6" height="16" rx="3" fill="'+c('fa')+'" stroke="'+s('fa')+'" stroke-width="0.5"/>'
+  +'<rect x="58" y="55" width="6" height="16" rx="3" fill="'+c('fa')+'" stroke="'+s('fa')+'" stroke-width="0.5"/>'
+  +'<path d="M27,34 Q23,46 25,58 Q29,56 30,46 Q30,38 28,34Z" fill="'+c('lat')+'" stroke="'+s('lat')+'" stroke-width="0.5"/>'
+  +'<path d="M53,34 Q57,46 55,58 Q51,56 50,46 Q50,38 52,34Z" fill="'+c('lat')+'" stroke="'+s('lat')+'" stroke-width="0.5"/>'
+  +'<rect x="34" y="33" width="12" height="12" rx="3" fill="'+c('rhom')+'" stroke="'+s('rhom')+'" stroke-width="0.5"/>'
+  +'<rect x="32" y="58" width="16" height="12" rx="3" fill="'+c('lumb')+'" stroke="'+s('lumb')+'" stroke-width="0.5"/>'
+  +'<path d="M27.5,66 Q24,78 28,84 Q33,82 35,74 Q37,68 34,66Z" fill="'+c('glute')+'" stroke="'+s('glute')+'" stroke-width="0.5"/>'
+  +'<path d="M52.5,66 Q56,78 52,84 Q47,82 45,74 Q43,68 46,66Z" fill="'+c('glute')+'" stroke="'+s('glute')+'" stroke-width="0.5"/>'
+  +'<rect x="28" y="82" width="12" height="34" rx="6" fill="'+c('quad')+'" stroke="'+s('quad')+'" stroke-width="0.5"/>'
+  +'<rect x="40" y="82" width="12" height="34" rx="6" fill="'+c('quad')+'" stroke="'+s('quad')+'" stroke-width="0.5"/>'
+  +'<rect x="28.5" y="84" width="11" height="32" rx="5.5" fill="'+c('ham')+'" stroke="'+s('ham')+'" stroke-width="0.5" opacity="0.8"/>'
+  +'<rect x="40.5" y="84" width="11" height="32" rx="5.5" fill="'+c('ham')+'" stroke="'+s('ham')+'" stroke-width="0.5" opacity="0.8"/>'
+  +'<rect x="29" y="116" width="10" height="24" rx="5" fill="'+c('calf')+'" stroke="'+s('calf')+'" stroke-width="0.5"/>'
+  +'<rect x="41" y="116" width="10" height="24" rx="5" fill="'+c('calf')+'" stroke="'+s('calf')+'" stroke-width="0.5"/>'
+  +'</svg>';
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ▶️ launchSession(ri)
+// Démarre une séance d'entraînement à partir d'une routine.
+// PARAMÈTRE : ri = index de la routine dans le tableau "routines"
+//
+// COMMENT ÇA MARCHE :
+//   1. Vérifie qu'aucune séance n'est déjà en cours
+//   2. Crée l'objet "activeSession" avec :
+//      - le nom de la routine
+//      - l'heure de début (Date.now())
+//      - une copie de tous les exercices avec leur état (done=false)
+//      - une seriesList : liste des séries individuelles de chaque exercice
+//   3. Lance le chronomètre global (sessInterval)
+//   4. Affiche l'overlay de séance (session-overlay)
+//
+// MODIFIER : Pour ajouter des infos à la séance (ex: objectif calorique),
+//   ajoute les dans l'objet "activeSession" ci-dessous.
+// ════════════════════════════════════════════════════════════════════
+function launchSession(ri){
+  if(activeSession){alert('Une séance est déjà en cours !');return}
+  var r=routines[ri];
+  activeSession={ri:ri,name:r.name,start:Date.now(),elapsed:0,
+    exercises:r.exercises.map(function(ex){
+      var sl = (ex.seriesList && ex.seriesList.length)
+        ? ex.seriesList.map(function(s){ return Object.assign({},s,{
+            done:false, timerSec:s.duration||ex.duration||60, timerRunning:false,
+            restRunning:false, restRemaining:s.restSec||0
+          }); })
+        : (function(){ var arr=[];
+            for(var k=0;k<(ex.sets||1);k++){
+              arr.push(ex.type==='time'
+                ? {duration:ex.duration||60,restSec:ex.rest||60,done:false,timerSec:ex.duration||60,timerRunning:false,restRunning:false,restRemaining:0}
+                : {reps:ex.reps||10,weight:ex.weight||0,restSec:ex.rest||60,done:false,restRunning:false,restRemaining:0});
+            } return arr; })();
+      return Object.assign({},ex,{
+        done:false, timerSec:ex.type==='time'?ex.duration:0,
+        timerRunning:false, origDur:ex.type==='time'?ex.duration:0,
+        seriesList:sl
+      });
+    })};
+  exTimers={};
+  sessInterval=setInterval(function(){
+    if(!activeSession)return;
+    activeSession.elapsed=Math.floor((Date.now()-activeSession.start)/1000);
+    var f=fmt(activeSession.elapsed);
+    var p=document.getElementById('sess-pill');p.textContent=f;p.classList.add('on');
+    var c=document.getElementById('sess-clock');if(c)c.textContent=f;
+  },1000);
+  //affiche les exercise penndant une seance
+  document.getElementById('session-overlay').classList.add('on');
+  renderSess();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔄 renderSess()
+// Rafraîchit l'affichage de l'overlay de séance.
+// Appelée à chaque fois qu'un exercice ou une série change d'état.
+//
+// COMMENT ÇA MARCHE :
+//   1. Compte les exercices terminés pour la barre de progression
+//   2. Met à jour le titre, le sous-titre "X/Y exercices terminés"
+//   3. Redessine la liste de tous les exercices via buildSessEx()
+//
+// MODIFIER : Pour changer l'affichage pendant la séance, c'est dans
+//   buildSessEx() que se passe la construction de chaque carte d'exercice.
+// ════════════════════════════════════════════════════════════════════
+function renderSess(){
+  if(!activeSession)return;
+  var done=activeSession.exercises.filter(function(e){return e.done}).length;
+  var tot=activeSession.exercises.length;
+  document.getElementById('sess-title').textContent=activeSession.name;
+  document.getElementById('sess-meta').textContent=done+'/'+tot+' exercices terminés';
+  document.getElementById('sess-prog-bar').style.width=Math.round(done/tot*100)+'%';
+  //affiche les exercise penndant une seance
+  document.getElementById('sess-body').innerHTML=activeSession.exercises.map(function(ex,i){return buildSessEx(ex,i)}).join('');
+}
+function buildSessEx(ex, i){
+  /* Construit le HTML d'un exercice PENDANT la séance.
+     Affiche chaque série individuellement avec son bouton de validation
+     et son timer de repos. Un bouton ✏️ permet de modifier à la volée. */
+  var done = ex.done;
+  var dbEx = DB.find(function(d){ return d.name === ex.name; });
+  var img  = (dbEx && dbEx.image) ? dbEx.image
+    : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%23333" width="40" height="40" rx="20"/><text x="20" y="26" text-anchor="middle" fill="white" font-size="18">💪</text></svg>';
+  var notesHtml = ex.notes
+    ? '<div style="background:rgba(79,142,247,0.07);border:1px solid rgba(79,142,247,0.15);border-radius:6px;padding:6px 8px;margin-bottom:8px;font-size:11px;color:var(--text2);line-height:1.4">'+ex.notes+'</div>'
+    : '';
+
+  // Initialiser seriesList si absente (vieux exercices)
+  if(!ex.seriesList || !ex.seriesList.length){
+    ex.seriesList = [];
+    for(var s = 0; s < (ex.sets||1); s++){
+      ex.seriesList.push(ex.type === 'time'
+        ? { duration:ex.origDur||60, restSec:ex.rest||60, done:false, timerSec:ex.origDur||60, timerRunning:false, restRunning:false, restRemaining:ex.rest||0 }
+        : { reps:ex.reps||10, weight:ex.weight||0, restSec:ex.rest||60, done:false, restRunning:false, restRemaining:ex.rest||0 });
+    }
+  }
+
+  var doneSeries = ex.seriesList.filter(function(s){ return s.done; }).length;
+
+  // Lignes de séries
+  var seriesHtml = ex.seriesList.map(function(s, si){
+    var isDone = s.done;
+    var info = ex.type === 'time'
+      ? (s.duration || ex.origDur || 60)+'s'
+      : (s.reps||10)+' reps'+(s.weight>0?' · '+s.weight+' kg':'');
+    var restHtml = '';
+    if(s.restRunning && s.restRemaining > 0){
+      restHtml = '<span class="sess-serie-timer" id="srt-'+i+'-'+si+'">'+fmt(s.restRemaining)+'</span>';
+    }
+    var playBtn = (ex.type === 'time' && !isDone)
+      ? '<button class="btn-icon '+(s.timerRunning?'pause':'play')+'" onclick="toggleSerieTimer('+i+','+si+')" style="width:28px;height:28px;font-size:12px">'+(s.timerRunning?'⏸':'▶')+'</button>'
+      : '';
+    return '<div class="sess-serie-row'+(isDone?' serie-done':'')+'">'
+      + '<span class="sess-serie-num">S'+(si+1)+'</span>'
+      + '<span class="sess-serie-info">'+info+'</span>'
+      + restHtml
+      + playBtn
+      + '<button class="sess-serie-check'+(isDone?' done':'')+'" onclick="toggleSerieDone('+i+','+si+')" title="'+(isDone?'Annuler':'Valider')+'">✓</button>'
+    + '</div>';
+  }).join('');
+
+  return '<div class="sess-ex'+(done?' done':'')+'" id="sex-'+i+'">'
+    + '<div style="display:flex;gap:8px;align-items:center;margin-bottom:8px">'
+      + '<img src="'+img+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover;flex-shrink:0;background:var(--bg3)" alt="'+ex.name+'"/>'
+      + '<div style="flex:1">'
+        + '<div style="font-size:13px;font-weight:600;color:var(--text)">'+ex.name+'</div>'
+        + '<div style="font-size:10px;color:var(--text3)">'+doneSeries+'/'+ex.seriesList.length+' série'+(ex.seriesList.length>1?'s':'')+' validée'+(doneSeries>1?'s':'')+'</div>'
+      + '</div>'
+      + '<button onclick="openEditSessModal('+i+')" style="background:rgba(79,142,247,0.1);border:1px solid rgba(79,142,247,0.2);color:var(--accent);border-radius:var(--radius-sm);padding:4px 8px;font-size:10px;cursor:pointer;font-family:\'DM Sans\',sans-serif" title="Modifier">✏️</button>'
+      + '<button class="btn-icon'+(done?' checked':' check')+'" onclick="toggleDone('+i+')" title="'+(done?'Annuler':'Tout valider')+'">✓</button>'
+    + '</div>'
+    + notesHtml
+    + '<div class="prog-wrap" style="margin-bottom:8px"><div class="prog-bar" id="tp-'+i+'" style="width:'+Math.round(doneSeries/ex.seriesList.length*100)+'%"></div></div>'
+    + seriesHtml
+  + '</div>';
+}
+
+
+// ════════════════════════════════════════════════════════════════════
+// ✓ toggleDone(i)
+// Valide ou annule UN EXERCICE ENTIER d'un coup (bouton ✓ principal).
+// PARAMÈTRE : i = index de l'exercice dans activeSession.exercises
+//
+// DIFFÉRENCE avec toggleSerieDone :
+//   - toggleDone = valide TOUTES les séries d'un exercice en un clic
+//   - toggleSerieDone = valide UNE SEULE série
+//
+// COMMENT ÇA MARCHE :
+//   1. Inverse l'état "done" de l'exercice (true → false ou false → true)
+//   2. Si on valide et qu'un timer tourne, on l'arrête
+//   3. Rafraîchit l'affichage
+// ════════════════════════════════════════════════════════════════════
+function toggleDone(i){
+  if(!activeSession)return;
+  var ex=activeSession.exercises[i];
+  ex.done=!ex.done;
+  if(ex.done&&ex.timerRunning){clearInterval(exTimers[i]);ex.timerRunning=false}
+  renderSess();
+}
+
+function toggleExTimer(i){
+  if(!activeSession)return;
+  var ex=activeSession.exercises[i];
+  if(ex.timerRunning){clearInterval(exTimers[i]);ex.timerRunning=false}
+  else{
+    if(ex.timerSec<=0)ex.timerSec=ex.origDur;
+    ex.timerRunning=true;
+    exTimers[i]=setInterval(function(){
+      ex.timerSec--;
+      var td=document.getElementById('td-'+i),tp=document.getElementById('tp-'+i);
+      if(td)td.textContent=fmt(ex.timerSec);
+      if(tp)tp.style.width=Math.round((ex.origDur-ex.timerSec)/ex.origDur*100)+'%';
+      if(ex.timerSec<=0){clearInterval(exTimers[i]);ex.timerRunning=false;ex.done=true;setTimeout(playSound,100);renderSess()}
+    },1000);
+  }
+  renderSess();
+}
+
+function resetExTimer(i){
+  if(!activeSession)return;
+  var ex=activeSession.exercises[i];
+  clearInterval(exTimers[i]);ex.timerRunning=false;ex.timerSec=ex.origDur;
+  var td=document.getElementById('td-'+i);if(td)td.textContent=fmt(ex.timerSec);
+  renderSess();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ⏹ stopSession()
+// Affiche le pop-up de confirmation pour arrêter la séance.
+// Le pop-up propose 3 choix :
+//   - Enregistrer la séance (appelle endSession(true))
+//   - Supprimer l'entraînement (appelle endSession(false))
+//   - Continuer la séance (ferme le pop-up)
+// ════════════════════════════════════════════════════════════════════
+function stopSession(){document.getElementById('modal-stop').classList.add('open')}
+
+// ════════════════════════════════════════════════════════════════════
+// 💾 endSession(save)
+// Termine définitivement la séance en cours.
+// PARAMÈTRE : save = true → enregistre dans l'historique
+//                    false → supprime sans sauvegarder
+//
+// CE QUI SE PASSE :
+//   1. Ferme le pop-up de confirmation
+//   2. Arrête tous les timers (chrono global + timers d'exercices)
+//   3. Si save=true : crée une entrée dans "hist" avec toutes les données
+//      (date, durée, exercices faits, muscles travaillés, calories estimées)
+//   4. Propose de mettre à jour la routine si des exercices ont été modifiés
+//   5. Remet l'app à l'état initial (activeSession = null)
+//
+// MODIFIER : Pour ajouter une info dans l'historique (ex: notes de séance),
+//   ajoute-la dans l'objet "entry" ci-dessous.
+// ════════════════════════════════════════════════════════════════════
+function endSession(save){
+  /* Termine la séance.
+     save=true  → enregistre dans l'historique
+     save=false → supprime sans sauvegarder
+     Après sauvegarde, propose de mettre à jour la routine si des
+     exercices ont été modifiés pendant la séance (✏️). */
+  document.getElementById('modal-stop').classList.remove('open');
+  clearInterval(sessInterval);
+  Object.values(exTimers).forEach(function(t){ clearInterval(t); });
+  // Arrêter les timers de repos des séries
+  if(activeSession){
+    activeSession.exercises.forEach(function(ex){
+      (ex.seriesList||[]).forEach(function(s){
+        if(s.restInterval) clearInterval(s.restInterval);
+      });
+    });
+  }
+  exTimers = {};
+  var savedSession = null;
+  if(save && activeSession){
+    var doneEx = activeSession.exercises.filter(function(e){ return e.done; });
+    var allP   = Array.from(new Set([].concat.apply([],doneEx.map(function(e){return e.muscles||[];}))));
+    var allS   = Array.from(new Set([].concat.apply([],doneEx.map(function(e){return e.sec||[];}))));
+    savedSession = {
+      routineName: activeSession.name,
+      date: new Date().toISOString(),
+      duration: activeSession.elapsed,
+      exercises: activeSession.exercises.map(function(e){
+        return { name:e.name, done:e.done, muscles:e.muscles, sec:e.sec,
+          type:e.type, sets:e.sets, reps:e.reps, weight:e.weight,
+          duration:e.origDur, rest:e.rest,
+          seriesList: (e.seriesList||[]).map(function(s){
+            return { reps:s.reps, weight:s.weight, restSec:s.restSec, duration:s.duration, done:s.done };
+          }),
+          modifiedDuringSess: e.modifiedDuringSess || false
+        };
+      }),
+      muscles:allP, secMuscles:allS,
+      doneCount:doneEx.length, totalCount:activeSession.exercises.length
+    };
+    hist.push(savedSession);
+    saveData();
+  }
+  activeSession = null;
+  document.getElementById('sess-pill').classList.remove('on');
+  document.getElementById('session-overlay').classList.remove('on');
+  // Proposer de sauvegarder les modifs dans la routine
+  if(savedSession) checkAndProposeRoutineUpdate(savedSession);
+  renderHome();
+  goTo('home', document.querySelector('.nav-btn'));
+}
+
+
+function renderHistoryList(){
+  document.getElementById('history-main').style.display='';
+  document.getElementById('history-detail').style.display='none';
+  var el=document.getElementById('history-list');
+  if(!hist.length){el.innerHTML='<div class="empty">Aucune séance enregistrée.</div>';return}
+  el.innerHTML=hist.slice().reverse().map(function(h,ri){
+    var i=hist.length-1-ri;
+    var d=new Date(h.date);
+    return '<div class="hist-card" onclick="openHistDetail('+i+')"><div style="font-size:10px;color:var(--text3);margin-bottom:2px">'+d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div><div style="font-size:14px;font-weight:600;color:var(--text);margin-bottom:2px">'+h.routineName+'</div><div style="font-size:11px;color:var(--text2);margin-bottom:6px">'+h.doneCount+'/'+h.totalCount+' exercices &middot; '+fmt(h.duration)+'</div><div>'+(h.muscles||[]).slice(0,4).map(function(m){return '<span class="tag tag-muscle">'+m+'</span>'}).join('')+'</div></div>'
+  }).join('');
+}
+
+function openHistDetail(idx){
+  var h=hist[idx];
+  document.getElementById('history-main').style.display='none';
+  document.getElementById('history-detail').style.display='';
+  var d=new Date(h.date);
+  var doneEx=h.exercises.filter(function(e){return e.done});
+  var mc={};doneEx.forEach(function(e){(e.muscles||[]).forEach(function(m){mc[m]=(mc[m]||0)+1})});
+  var me=Object.entries(mc).sort(function(a,b){return b[1]-a[1]});
+  var maxC=me.length?me[0][1]:1;
+  var pDone=Array.from(new Set([].concat.apply([],doneEx.map(function(e){return e.muscles||[];}))));
+  var sDone=Array.from(new Set([].concat.apply([],doneEx.map(function(e){return e.sec||[];}))));
+  document.getElementById('hd-content').innerHTML=
+    '<div class="card"><div style="font-size:16px;font-weight:600;color:var(--text);margin-bottom:3px">'+h.routineName+'</div><div style="font-size:11px;color:var(--text2);margin-bottom:10px">'+d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div><div class="stats-row"><div class="stat-card"><div class="stat-label">Exercices</div><div class="stat-val">'+h.doneCount+'<span style="font-size:14px;color:var(--text2);">/'+h.totalCount+'</span></div></div><div class="stat-card"><div class="stat-label">Durée</div><div class="stat-val" style="font-size:20px">'+fmt(h.duration)+'</div></div></div></div>'
+    +(me.length?'<div class="card"><div class="section-label">Muscles travaillés</div><div class="bar-chart">'+me.map(function(entry){var m=entry[0],cnt=entry[1];return '<div class="bar-col"><div class="bar-count">'+cnt+'&times;</div><div class="bar-fill" style="height:'+( Math.round(cnt/maxC*60)+8)+'px"></div><div class="bar-lbl">'+m.split(' ')[0].replace('Ischio-','Isch.')+'</div></div>'}).join('')+'</div></div>':'')
+    +'<div class="card"><div class="section-label">Corps musculaire</div><div style="display:flex;gap:14px;align-items:flex-start">'+buildSVG(pDone,sDone,90,165)+'<div style="flex:1;padding-top:4px">'+(pDone.length?'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px">Principal</div>'+pDone.map(function(m){return '<div style="font-size:12px;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></span>'+m+'</div>'}).join(''):'')+(sDone.length?'<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 6px">Secondaire</div>'+sDone.map(function(m){return '<div style="font-size:12px;color:var(--text2);margin-bottom:4px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#1DAB67;opacity:.5;flex-shrink:0"></span>'+m+'</div>'}).join(''):'')+'</div></div></div>'
+    +'<div class="card"><div class="section-label">Détail des exercices</div>'+h.exercises.map(function(e){return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)"><div style="width:18px;height:18px;border-radius:50%;background:'+(e.done?'var(--green)':'rgba(255,255,255,0.1)')+';display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;flex-shrink:0">'+(e.done?'&#10003;':'')+'</div><div style="flex:1"><div style="font-size:12px;color:'+(e.done?'var(--text)':'var(--text2)')+';">'+e.name+'</div><div style="font-size:10px;color:var(--text3)">'+(e.type==='time'?e.sets+'&times; '+e.duration+'s':e.sets+'&times;'+(e.reps||10)+(e.weight>0?' &middot; '+e.weight+'kg':''))+'</div></div></div>'}).join('')+'</div>'
+    +'<button class="btn btn-primary" onclick="openRoutineStatsPanel(hist['+idx+'])" style="margin-bottom:8px">📊 Voir tout</button>'+'<button class="btn btn-danger" onclick="delHist('+idx+')" style="margin-top:2px">Supprimer cette séance</button>';
+}
+
+function closeHistoryDetail(){document.getElementById('history-detail').style.display='none';document.getElementById('history-main').style.display=''}
+function delHist(i){if(confirm('Supprimer cette séance ?')){hist.splice(i,1);saveData();closeHistoryDetail();renderHistoryList()}}
+
+
+// ════ PROFIL ════
+var profil = JSON.parse(localStorage.getItem('ft_profil')||'{}');
+function saveProfilData(){ localStorage.setItem('ft_profil',JSON.stringify(profil)); }
+
+// ════════════════════════════════════════════════════════════════════
+// 👤 renderProfil()
+// Rafraîchit l'affichage de l'onglet Profil/Stats.
+// Appelée à chaque fois qu'on navigue vers cet onglet.
+//
+// CE QUI EST MIS À JOUR :
+//   - Avatar (photo ou emoji 👤)
+//   - Pseudo et sous-titre
+//   - Données physiques (poids, taille, sexe, âge)
+//   - Compteur de séances de la semaine/mois selon le toggle
+//   - Compteur total
+//   - Carte du "dernier entraînement" avec le SVG du corps colorié
+//   - Mini-historique des 5 dernières séances
+//
+// MODIFIER : Pour ajouter une info dans le profil, crée un élément HTML
+//   dans l'écran "profil" avec un id unique, puis mets à jour sa valeur ici.
+// ════════════════════════════════════════════════════════════════════
+function renderProfil(){
+  var now=new Date();
+  // Stats
+  var el_m=document.getElementById('p-stat-month');
+  var el_t=document.getElementById('p-stat-total');
+  if(el_m) el_m.textContent=hist.filter(function(h){var d=new Date(h.date);return d.getMonth()===now.getMonth()&&d.getFullYear()===now.getFullYear()}).length;
+  if(el_t) el_t.textContent=hist.length;
+  // Avatar
+  var av=document.getElementById('p-avatar');
+  if(av) av.innerHTML=profil.photo?'<img src="'+profil.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>':'👤';
+  // Pseudo
+  var pp=document.getElementById('p-pseudo'); if(pp) pp.textContent=profil.pseudo||'Mon Profil';
+  var ps=document.getElementById('p-sub');    if(ps) ps.textContent=profil.pseudo?'Athlète Altius':'Appuie pour modifier';
+  // Physique
+  var dp=document.getElementById('p-poids');  if(dp) dp.textContent=profil.poids?profil.poids+' kg':'-- kg';
+  var dt=document.getElementById('p-taille'); if(dt) dt.textContent=profil.taille?profil.taille+' cm':'-- cm';
+  var ds=document.getElementById('p-sexe');   if(ds) ds.textContent=profil.sexe||'--';
+  var da=document.getElementById('p-age');    if(da) da.textContent=profil.age?profil.age+' ans':'--';
+  // Carte séance
+  var svgEl=document.getElementById('p-svg');
+  var timeEl=document.getElementById('p-time');
+  var nameEl=document.getElementById('p-name');
+  if(svgEl){
+    if(!hist.length){
+      svgEl.innerHTML='<div style="font-size:11px;color:var(--text3);text-align:center;padding:18px 0">Aucune séance</div>';
+      if(timeEl) timeEl.textContent='--:--';
+      if(nameEl) nameEl.style.display='none';
+    } else {
+      var last=hist[hist.length-1];
+      var doneEx=last.exercises.filter(function(e){return e.done});
+      var pm=[],sm=[];
+      doneEx.forEach(function(e){(e.muscles||[]).forEach(function(m){if(pm.indexOf(m)<0)pm.push(m)})});
+      doneEx.forEach(function(e){(e.sec||[]).forEach(function(m){if(pm.indexOf(m)<0&&sm.indexOf(m)<0)sm.push(m)})});
+      svgEl.innerHTML=buildSVG(pm,sm,100,130);
+      if(timeEl) timeEl.textContent=fmt(last.duration);
+      if(nameEl){nameEl.textContent=last.routineName;nameEl.style.display='';}
+    }
+  }
+  // Mini historique
+  var hl=document.getElementById('p-hist-list');
+  if(hl){
+    if(!hist.length){hl.innerHTML='<div class="empty" style="padding:16px">Aucune séance enregistrée.</div>';return;}
+    hl.innerHTML=hist.slice().reverse().slice(0,5).map(function(h,ri){
+      var i=hist.length-1-ri;
+      var d=new Date(h.date);
+      return '<div class="hist-card" onclick="openHistFromProfil('+i+')">'
+        +'<div style="font-size:10px;color:var(--text3);margin-bottom:2px">'+d.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})+'</div>'
+        +'<div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:2px">'+h.routineName+'</div>'
+        +'<div style="font-size:11px;color:var(--text2)">'+h.doneCount+'/'+h.totalCount+' exercices &middot; '+fmt(h.duration)+'</div>'
+        +'</div>';
+    }).join('');
+  }
+}
+
+function openLastHistDetail(){
+  if(!hist.length) return;
+  openHistFromProfil(hist.length-1);
+}
+//ouvre le détail d'une séance depuis le profil, avec une mise en page adaptée
+function openHistFromProfil(idx){
+  var h=hist[idx]; if(!h) return;
+  var d=new Date(h.date);
+  var doneEx=h.exercises.filter(function(e){return e.done});
+  var mc={};doneEx.forEach(function(e){(e.muscles||[]).forEach(function(m){mc[m]=(mc[m]||0)+1})});
+  var me=Object.entries(mc).sort(function(a,b){return b[1]-a[1]});
+  var maxC=me.length?me[0][1]:1;
+  var pD=Array.from(new Set([].concat.apply([],doneEx.map(function(e){return e.muscles||[];}))));
+  var sD=Array.from(new Set([].concat.apply([],doneEx.map(function(e){return e.sec||[];}))));
+  openRoutineStatsPanel(hist[idx]);
+}
+
+function delHistFromProfil(i, panel){
+  if(confirm('Supprimer cette séance ?')){
+    hist.splice(i,1); saveData();
+    if(panel) panel.remove();
+    renderProfil();
+  }
+}
+
+// ════════════════════════════════════════════════════════════════════
+// ⚙️ openProfilModal()
+// Ouvre le pop-up d'édition du profil.
+// Pré-remplit les champs avec les données actuelles du profil.
+//
+// LES DONNÉES SONT STOCKÉES dans la variable "profil" (objet JS)
+// et sauvegardées dans localStorage via saveProfilData().
+//
+// AJOUTER UN CHAMP :
+//   1. Ajoute un <input> dans le HTML du modal-profil (cherche "e-pseudo")
+//   2. Ajoute profil.monChamp = document.getElementById('e-mon-champ').value dans saveProfilModal()
+//   3. Ajoute la lecture dans openProfilModal() : document.getElementById('e-mon-champ').value = profil.monChamp || ''
+//   4. Affiche la valeur dans renderProfil()
+// ════════════════════════════════════════════════════════════════════
+function openProfilModal(){
+  document.getElementById('e-pseudo').value=profil.pseudo||'';
+  document.getElementById('e-poids').value=profil.poids||'';
+  document.getElementById('e-taille').value=profil.taille||'';
+  document.getElementById('e-age').value=profil.age||'';
+  document.getElementById('e-sexe').value=profil.genre||'';
+  document.getElementById('e-objectif').value=profil.objectif||'';
+  var av=document.getElementById('p-avatar-modal');
+  if(av) av.innerHTML=(profil.photo?'<img src="'+profil.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>':'👤')+'<div style="position:absolute;bottom:0;right:0;width:20px;height:20px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;pointer-events:none">✏️</div>';
+  var m=document.getElementById('modal-profil');
+  m.style.visibility='visible';
+  m.style.pointerEvents='auto';
+}
+
+function closeProfilModal(){
+  var m=document.getElementById('modal-profil');
+  m.style.visibility='hidden';
+  m.style.pointerEvents='none';
+}
+
+function saveProfilModal(){
+  profil.pseudo=document.getElementById('e-pseudo').value.trim()||null;
+  profil.poids=parseFloat(document.getElementById('e-poids').value)||null;
+  profil.taille=parseFloat(document.getElementById('e-taille').value)||null;
+  profil.age=parseInt(document.getElementById('e-age').value)||null;
+  profil.genre=document.getElementById('e-sexe').value||null;
+  profil.objectif=document.getElementById('e-objectif').value||null;
+  saveProfilData(); closeProfilModal(); renderProfil();
+}
+
+function handlePhotoUpload(input){
+  if(!input.files||!input.files[0]) return;
+  var r=new FileReader();
+  r.onload=function(e){
+    profil.photo=e.target.result; saveProfilData();
+    var av=document.getElementById('p-avatar-modal');
+    if(av) av.innerHTML='<img src="'+profil.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/><div style="position:absolute;bottom:0;right:0;width:20px;height:20px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;pointer-events:none">✏️</div>';
+    renderProfil();
+  };
+  r.readAsDataURL(input.files[0]);
+}
+
+
+// ════════════════════════════════════════
+// MET MAP (calories estimées)
+// ════════════════════════════════════════
+var MET_MAP = {
+  "Développé couché":4.5,"Développé couché haltères":4.5,"Pompes":4.0,"Écarté couché":4.0,"Dips":4.5,
+  "Squat barre":6.0,"Squat gobelet":5.5,"Fentes avant":5.0,"Leg press":4.5,"Romanian deadlift":5.5,
+  "Leg curl":3.5,"Hip thrust":4.5,"Mollets debout":3.5,"Leg extension":3.5,
+  "Tirage vertical poitrine":4.5,"Tirage vertical prise sérrée":4.5,"Rowing barre":5.0,
+  "Rowing haltère":4.5,"Traction":5.5,"Face pull":3.5,"Soulevé de terre":6.0,
+  "Good morning":4.0,"Tractions australiennes":4.5,"Curl biceps barre":3.5,
+  "Curl haltères":3.5,"Curl marteau":3.5,"Curl concentré":3.5,
+  "Extensions triceps poulie":3.5,"Pompes diamant":4.0,"Pompes sérrées":4.0,
+  "Pompes planche":4.0,"Pompes claquées":5.0,"Pompes archée":4.5,"Pompes larges":4.0,
+  "Pompes déclinées":4.0,"Pompes en pic":4.0,
+  "Développé militaire (barre)":4.5,"Développé millitaire (haltères)":4.5,"Développé millitaire (barre)":4.5,
+  "Développé couché incliné (haltères)":4.5,
+  "Elevations latérales":3.5,"Elevations frontales":3.5,"Elevations disque frontale":3.5,
+  "Oiseau":3.5,"Shrugs":3.5,"Marche du Fermier":5.0,"Thruster":6.5,
+  "Gainage planche":3.8,"Crunchs":3.0,"Relevés de jambes":3.5,"Gainage latéral":3.8,
+  "Abdominaux vélo":3.5,"Mountain climbers":8.0,"Burpees":8.5,"Course sur place":9.0,
+  "Corde à sauter":10.0,"Kettlebell swing":7.0,"Boxe":8.0,"Pistol squat":6.0,
+  "Fentes bulgares":5.5,"Curl Disque":3.5,"Extension triceps (disque)":3.5,
+  "Extension poignets (barre)":2.5, "Extension poignets (haltères)":2.5,
+  "gainage planche":3.8
+};
+var DEFAULT_MET = 4.0;
+
+// ════════════════════════════════════════════════════════════════════
+// 🔥 estimateKcal(sessionEntry)
+// Calcule les calories ESTIMÉES brûlées pendant une séance.
+//
+// FORMULE UTILISÉE : Calories = MET × poids (kg) × durée (heures)
+//   MET = "Metabolic Equivalent of Task" : une valeur scientifique
+//   qui mesure l'intensité d'un exercice. Ex: Burpees = 8.5, Planche = 3.8
+//
+// PARAMÈTRE : sessionEntry = une entrée de l'historique (hist[i])
+//
+// PRÉCISION : Cette estimation peut varier de ±20%.
+//   Elle est plus précise si le poids de l'utilisateur est renseigné dans le profil.
+//   Si pas de poids → utilise 75 kg par défaut.
+//
+// MODIFIER : Pour changer le MET d'un exercice → cherche MET_MAP et
+//   modifie la valeur correspondante. Pour en ajouter un, ajoute simplement
+//   "Nom de l'exercice": valeur_MET dans le tableau MET_MAP.
+// ════════════════════════════════════════════════════════════════════
+function estimateKcal(sessionEntry) {
+  var poids = profil.poids || 75;
+  var heures = (sessionEntry.duration || 0) / 3600;
+  if (heures === 0) return 0;
+  var doneEx = (sessionEntry.exercises||[]).filter(function(e){ return e.done; });
+  if (!doneEx.length) return 0;
+  var metMoyen = doneEx.reduce(function(s,ex){ return s+(MET_MAP[ex.name]||DEFAULT_MET); },0) / doneEx.length;
+  return Math.round(metMoyen * poids * heures);
+}
+
+// ════════════════════════════════════════
+// STATS GLOBALES
+// ════════════════════════════════════════
+var currentStatPeriod = 'week';
+
+// ════════════════════════════════════════════════════════════════════
+// 📊 openStatsPanel()
+// Ouvre le panneau de statistiques globales (plein écran par-dessus l'app).
+// Le panneau contient 5 blocs :
+//   1. ⚡ Chiffres clés : séances, heures, calories, séries totales
+//   2. 💪 Volume : répétitions et temps de repos cumulé
+//   3. 🔥 Histogramme des calories sur 7 jours
+//   4. 📅 Calendrier des jours d'entraînement
+//   5. 🏋️ Classement des muscles les plus travaillés
+//
+// Le toggle Sem./Mois/Total en haut filtre toutes ces stats sur la période choisie.
+// ════════════════════════════════════════════════════════════════════
+function openStatsPanel() {
+  document.getElementById('stats-panel').classList.add('on');
+  renderStats();
+}
+function closeStatsPanel() {
+  document.getElementById('stats-panel').classList.remove('on');
+}
+
+function setStatPeriod(p) {
+  currentStatPeriod = p;
+  ['week','month','all'].forEach(function(x){
+    var btn = document.getElementById('pt-'+x);
+    if(btn) btn.className = 'period-btn' + (x===p?' active':'');
+  });
+  renderStats();
+}
+
+function getFilteredHist(period) {
+  var now = new Date();
+  return hist.filter(function(h) {
+    var d = new Date(h.date);
+    if (period === 'week') {
+      var day = now.getDay()||7;
+      var mon = new Date(now); mon.setHours(0,0,0,0); mon.setDate(now.getDate()-day+1);
+      return d >= mon;
+    }
+    if (period === 'month') {
+      return d.getMonth()===now.getMonth() && d.getFullYear()===now.getFullYear();
+    }
+    return true;
+  });
+}
+
+function renderStats() {
+  var filtered = getFilteredHist(currentStatPeriod);
+  var count = filtered.length;
+  var totalSec = filtered.reduce(function(s,h){ return s+(h.duration||0); },0);
+  var hours = (totalSec/3600).toFixed(1);
+  var kcal = filtered.reduce(function(s,h){ return s+estimateKcal(h); },0);
+  var totalSets=0, totalReps=0, totalRest=0;
+  filtered.forEach(function(h){
+    (h.exercises||[]).filter(function(e){return e.done;}).forEach(function(e){
+      totalSets += (e.sets||0);
+      if(e.type!=='time') totalReps += (e.sets||0)*(e.reps||0);
+      totalRest += (e.rest||0)*(e.sets||0);
+    });
+  });
+
+  function set(id,v){ var el=document.getElementById(id); if(el)el.innerHTML=v; }
+  set('ps-count', count);
+  set('ps-hours', hours+'<span class="scard-unit">h</span>');
+  set('ps-kcal', kcal+'<span class="scard-unit" style="font-size:9px">kcal</span>');
+  set('ps-sets', totalSets);
+  set('ps-reps', totalReps);
+  set('ps-rest', Math.round(totalRest/60)+'<span class="scard-unit">min</span>');
+
+  renderCalendar(filtered);
+  renderCalBars();
+  renderMuscleStats(filtered);
+}
+
+function renderCalendar(filtered) {
+  var el = document.getElementById('ps-calendar'); if(!el) return;
+  var now = new Date();
+  var days = [];
+  var period = currentStatPeriod;
+  if (period==='week') {
+    var day=now.getDay()||7;
+    var mon=new Date(now); mon.setHours(0,0,0,0); mon.setDate(now.getDate()-day+1);
+    for(var i=0;i<7;i++){var d=new Date(mon);d.setDate(mon.getDate()+i);days.push(d);}
+  } else {
+    for(var i=27;i>=0;i--){var d=new Date(now);d.setHours(0,0,0,0);d.setDate(now.getDate()-i);days.push(d);}
+  }
+  var byDay={};
+  hist.forEach(function(h){
+    var d=new Date(h.date);
+    var k=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+    byDay[k]=(byDay[k]||0)+1;
+  });
+  var dn=['L','M','M','J','V','S','D'];
+  var labels=dn.map(function(n){return '<div class="cal-day-label">'+n+'</div>';}).join('');
+  var firstDow=period==='week'?0:(days[0].getDay()||7)-1;
+  var empty='';
+  if(period!=='week') for(var i=0;i<firstDow;i++) empty+='<div class="cal-day empty"></div>';
+  var today=now.toDateString();
+  var cells=days.map(function(d){
+    var k=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+    var cnt=byDay[k]||0;
+    var cls='cal-day'+(cnt===1?' s1':cnt>=2?' s2':'')+(d.toDateString()===today?' today':'');
+    var tip=cnt?cnt+' séance'+(cnt>1?'s':''):d.getDate()+'';
+    return '<div class="'+cls+'" title="'+tip+'"></div>';
+  }).join('');
+  el.innerHTML='<div class="cal-grid">'+labels+empty+cells+'</div>';
+}
+
+function renderCalBars() {
+  var el=document.getElementById('ps-cal-bars'); if(!el) return;
+  var now=new Date(); now.setHours(0,0,0,0);
+  var days=[];
+  for(var i=6;i>=0;i--){var d=new Date(now);d.setDate(now.getDate()-i);days.push(d);}
+  var kcalDay={};
+  hist.forEach(function(h){
+    var d=new Date(h.date);
+    var k=d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+    kcalDay[k]=(kcalDay[k]||0)+estimateKcal(h);
+  });
+  var vals=days.map(function(d){
+    return kcalDay[d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate()]||0;
+  });
+  var maxV=Math.max.apply(null,vals)||1;
+  var dn=['L','M','M','J','V','S','D'];
+  el.innerHTML=days.map(function(d,i){
+    var h=Math.max(Math.round(vals[i]/maxV*60),vals[i]>0?4:0);
+    var dow=(d.getDay()||7)-1;
+    var isToday=d.toDateString()===(new Date()).toDateString();
+    return '<div class="bar-col">'
+      +(vals[i]>0?'<div class="bar-val">'+vals[i]+'</div>':'')
+      +'<div class="bar-fill" style="height:'+h+'px;background:'+(isToday?'var(--green)':'var(--accent)')+'"></div>'
+      +'<div class="bar-lbl" style="color:'+(isToday?'var(--green)':'var(--text3)')+'">'+dn[dow]+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function renderMuscleStats(filtered) {
+  var el=document.getElementById('ps-muscles'); if(!el) return;
+  var mc={};
+  filtered.forEach(function(h){
+    (h.exercises||[]).filter(function(e){return e.done;}).forEach(function(e){
+      (e.muscles||[]).forEach(function(m){ mc[m]=(mc[m]||0)+1; });
+    });
+  });
+  var entries=Object.entries(mc).sort(function(a,b){return b[1]-a[1]}).slice(0,8);
+  if(!entries.length){el.innerHTML='<div style="font-size:12px;color:var(--text3);text-align:center;padding:12px">Aucune donnée</div>';return;}
+  var maxC=entries[0][1];
+  el.innerHTML=entries.map(function(e){
+    var pct=Math.round(e[1]/maxC*100);
+    return '<div class="muscle-row">'
+      +'<div style="font-size:12px;color:var(--text);width:110px;flex-shrink:0">'+e[0]+'</div>'
+      +'<div class="muscle-bar-bg"><div class="muscle-bar-fill" style="width:'+pct+'%"></div></div>'
+      +'<div style="font-size:11px;color:var(--text2);margin-left:6px;width:28px;text-align:right;flex-shrink:0">'+e[1]+'×</div>'
+      +'</div>';
+  }).join('');
+}
+
+// ════════════════════════════════════════
+// STATS PAR ROUTINE (historique)
+// ════════════════════════════════════════
+function openRoutineStatsPanel(h) {
+  // h = une entrée complète de l'historique
+  var panel = document.getElementById('routine-stats-panel');
+  var body  = document.getElementById('rsp-body');
+  var title = document.getElementById('rsp-title');
+  if(!panel || !body || !title) return;
+
+  var d = new Date(h.date);
+  title.textContent = h.routineName;
+
+  var doneEx = (h.exercises||[]).filter(function(e){ return e.done; });
+  var totalSets=0, totalReps=0, totalRest=0;
+  doneEx.forEach(function(e){
+    totalSets += (e.sets||0);
+    if(e.type!=='time') totalReps += (e.sets||0)*(e.reps||0);
+    totalRest += (e.rest||0)*(e.sets||0);
+  });
+  var kcal = estimateKcal(h);
+
+  // Comptage muscles
+  var mc = {};
+  doneEx.forEach(function(e){
+    (e.muscles||[]).forEach(function(m){ mc[m]=(mc[m]||0)+1; });
+  });
+  var muscleEntries = Object.entries(mc).sort(function(a,b){ return b[1]-a[1]; });
+  var maxC = muscleEntries.length ? muscleEntries[0][1] : 1;
+
+  // Muscles pour le SVG
+  var pDone = Array.from(new Set([].concat.apply([], doneEx.map(function(e){ return e.muscles||[]; }))));
+  var sDone = Array.from(new Set([].concat.apply([], doneEx.map(function(e){ return e.sec||[]; }))));
+
+  // Construction du HTML par blocs séparés (évite les erreurs de concaténation)
+  var html = '';
+
+  // Date
+  html += '<div style="font-size:11px;color:var(--text2);margin-bottom:12px">';
+  html += d.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  html += '</div>';
+
+  // Bloc 1 : résumé
+  html += '<div class="sblock"><div class="sblock-title">⚡ Résumé</div>';
+  html += '<div class="s4grid">';
+  html += '<div class="scard scard-accent"><div class="scard-label">Exercices</div><div class="scard-val">'+h.doneCount+'<span class="scard-unit">/'+h.totalCount+'</span></div></div>';
+  html += '<div class="scard"><div class="scard-label">Durée</div><div class="scard-val" style="font-size:18px">'+fmt(h.duration)+'</div></div>';
+  html += '<div class="scard scard-green"><div class="scard-label">Calories est.</div><div class="scard-val">'+kcal+'<span class="scard-unit" style="font-size:9px">kcal</span></div></div>';
+  html += '<div class="scard"><div class="scard-label">Séries tot.</div><div class="scard-val">'+totalSets+'</div></div>';
+  html += '</div></div>';
+
+  // Bloc 2 : volume
+  html += '<div class="sblock"><div class="sblock-title">💪 Volume</div>';
+  html += '<div class="s4grid">';
+  html += '<div class="scard"><div class="scard-label">Répétitions</div><div class="scard-val">'+totalReps+'</div></div>';
+  html += '<div class="scard"><div class="scard-label">Temps repos</div><div class="scard-val">'+Math.round(totalRest/60)+'<span class="scard-unit">min</span></div></div>';
+  html += '</div></div>';
+
+  // Bloc 3 : corps musculaire SVG
+  html += '<div class="sblock"><div class="sblock-title">🏋️ Corps musculaire</div>';
+  html += '<div style="display:flex;gap:14px;align-items:flex-start">';
+  html += buildSVG(pDone, sDone, 100, 180);
+  html += '<div style="flex:1">';
+  if(pDone.length){
+    html += '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px">Principal</div>';
+    pDone.forEach(function(m){
+      html += '<div style="font-size:12px;color:var(--text);margin-bottom:4px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0"></span>'+m+'</div>';
+    });
+  }
+  if(sDone.length){
+    html += '<div style="font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin:8px 0 5px">Secondaire</div>';
+    sDone.forEach(function(m){
+      html += '<div style="font-size:12px;color:var(--text2);margin-bottom:4px;display:flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:50%;background:#1DAB67;opacity:.5;flex-shrink:0"></span>'+m+'</div>';
+    });
+  }
+  html += '</div></div></div>';
+
+  // Bloc 4 : muscles travaillés (barres)
+  if(muscleEntries.length){
+    html += '<div class="sblock"><div class="sblock-title">📊 Muscles travaillés</div>';
+    muscleEntries.forEach(function(e){
+      var pct = Math.round(e[1]/maxC*100);
+      html += '<div class="muscle-row">';
+      html += '<div style="font-size:12px;color:var(--text);width:110px;flex-shrink:0">'+e[0]+'</div>';
+      html += '<div class="muscle-bar-bg"><div class="muscle-bar-fill" style="width:'+pct+'%"></div></div>';
+      html += '<div style="font-size:11px;color:var(--text2);margin-left:6px;width:28px;text-align:right;flex-shrink:0">'+e[1]+'×</div>';
+      html += '</div>';
+    });
+    html += '</div>';
+  }
+
+  // Bloc 5 : détail exercices
+  html += '<div class="sblock"><div class="sblock-title">📋 Exercices</div>';
+  h.exercises.forEach(function(e){
+    html += '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border)">';
+    html += '<div style="width:20px;height:20px;border-radius:50%;background:'+(e.done?'var(--green)':'rgba(255,255,255,0.1)')+';display:flex;align-items:center;justify-content:center;font-size:10px;color:#fff;flex-shrink:0">'+(e.done?'✓':'')+'</div>';
+    html += '<div style="flex:1">';
+    html += '<div style="font-size:12px;color:'+(e.done?'var(--text)':'var(--text2)')+'">'+e.name+'</div>';
+    html += '<div style="font-size:10px;color:var(--text3)">'+(e.type==='time'?e.sets+'× '+e.duration+'s':e.sets+'×'+(e.reps||10)+(e.weight>0?' · '+e.weight+'kg':''))+(e.rest>0?' · Repos '+e.rest+'s':'')+'</div>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+
+  body.innerHTML = html;
+  panel.classList.add('on');
+  panel.style.zIndex = 300;
+}
+
+function closeRoutineStatsPanel() {
+  var panel = document.getElementById('routine-stats-panel');
+  if(panel){ panel.classList.remove('on'); panel.style.zIndex = 150; }
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// ✓ VALIDATION D'UNE SÉRIE INDIVIDUELLE EN SESSION
+// Lance le timer de repos après validation. Valide l'exercice entier
+// si toutes les séries sont cochées.
+// ═══════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+// ✓ toggleSerieDone(exIdx, serieIdx)
+// Valide ou annule UNE série individuelle pendant la séance.
+// C'est le bouton ✓ à droite de chaque série (S1, S2, S3...).
+//
+// APRÈS VALIDATION :
+//   - Le timer de repos démarre automatiquement (si repos > 0)
+//   - Si TOUTES les séries sont validées → l'exercice entier passe en "done"
+//
+// APRÈS ANNULATION :
+//   - Le timer de repos s'arrête
+//   - L'exercice repasse en non-terminé si nécessaire
+// ════════════════════════════════════════════════════════════════════
+function toggleSerieDone(exIdx, serieIdx){
+  if(!activeSession) return;
+  var ex    = activeSession.exercises[exIdx];
+  var serie = ex.seriesList[serieIdx];
+  serie.done = !serie.done;
+  if(serie.done && serie.restSec > 0){
+    startRestTimer(exIdx, serieIdx);
+  }
+  if(!serie.done && serie.restRunning){
+    clearInterval(serie.restInterval);
+    serie.restRunning = false;
+    serie.restRemaining = serie.restSec;
+  }
+  // Si toutes les séries validées → exercice entier validé
+  ex.done = ex.seriesList.every(function(s){ return s.done; });
+  renderSess();
+}
+
+// Lance le décompte du repos pour une série (après validation)
+// ════════════════════════════════════════════════════════════════════
+// ⏱ startRestTimer(exIdx, serieIdx)
+// Lance le décompte du temps de repos APRÈS qu'une série est validée.
+// Le timer s'affiche en jaune à côté de la série et décompte chaque seconde.
+// Quand il arrive à 0, il s'arrête et disparaît.
+//
+// MODIFIER : Pour changer le comportement à la fin du repos (ex: vibrer plus
+//   fort, envoyer une notif), modifie le bloc "if(serie.restRemaining <= 0)".
+// ════════════════════════════════════════════════════════════════════
+function startRestTimer(exIdx, serieIdx){
+  var ex    = activeSession.exercises[exIdx];
+  var serie = ex.seriesList[serieIdx];
+  serie.restRemaining = serie.restSec;
+  serie.restRunning   = true;
+  serie.restInterval  = setInterval(function(){
+    serie.restRemaining--;
+    var el = document.getElementById('srt-'+exIdx+'-'+serieIdx);
+    if(el) el.textContent = fmt(serie.restRemaining);
+    if(serie.restRemaining <= 0){
+      clearInterval(serie.restInterval);
+      serie.restRunning = false;
+      playSound();
+      renderSess();
+    }
+  }, 1000);
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ⏱️ TIMER D'UNE SÉRIE CHRONOMÉTRÉE (type 'time')
+// ═══════════════════════════════════════════════════════════════════
+// ════════════════════════════════════════════════════════════════════
+// ▶️⏸ toggleSerieTimer(exIdx, serieIdx)
+// Démarre ou met en pause le chrono d'une série chronométrée (type 'time').
+// Utilisé pour les exercices comme la planche, le gainage, etc.
+// Quand le chrono arrive à 0 → la série est automatiquement validée.
+// ════════════════════════════════════════════════════════════════════
+function toggleSerieTimer(exIdx, serieIdx){
+  if(!activeSession) return;
+  var ex    = activeSession.exercises[exIdx];
+  var serie = ex.seriesList[serieIdx];
+  if(serie.timerRunning){
+    clearInterval(serie.timerInterval);
+    serie.timerRunning = false;
+  } else {
+    if(serie.timerSec <= 0) serie.timerSec = serie.duration || ex.origDur || 60;
+    serie.timerRunning = true;
+    serie.timerInterval = setInterval(function(){
+      serie.timerSec--;
+      var td = document.getElementById('td-'+exIdx+'-'+serieIdx);
+      if(td) td.textContent = fmt(serie.timerSec);
+      if(serie.timerSec <= 0){
+        clearInterval(serie.timerInterval);
+        serie.timerRunning = false;
+        serie.done = true;
+        if(serie.restSec > 0) startRestTimer(exIdx, serieIdx);
+        ex.done = ex.seriesList.every(function(s){ return s.done; });
+        renderSess();
+      }
+    }, 1000);
+  }
+  renderSess();
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ✏️ MODIFIER UN EXERCICE PENDANT LA SÉANCE
+// Ouvre un modal pour ajuster les séries sans quitter l'entraînement
+// ═══════════════════════════════════════════════════════════════════
+var editSessExIdx = null;
+
+// ════════════════════════════════════════════════════════════════════
+// ✏️ openEditSessModal(exIdx)
+// Ouvre le pop-up de modification d'un exercice PENDANT la séance.
+// Permet d'ajuster les séries, reps, poids en temps réel.
+//
+// IMPORTANT : Les modifications ne s'appliquent qu'à CETTE séance.
+// À la fin, on proposera de mettre à jour la routine si des changements ont été faits.
+// ════════════════════════════════════════════════════════════════════
+function openEditSessModal(exIdx){
+  editSessExIdx = exIdx;
+  var ex = activeSession.exercises[exIdx];
+  document.getElementById('esm-title').textContent = ex.name;
+  renderEditSessSeriesList();
+  document.getElementById('modal-edit-sess').classList.add('open');
+}
+
+function renderEditSessSeriesList(){
+  var ex = activeSession.exercises[editSessExIdx];
+  document.getElementById('esm-series-list').innerHTML = ex.seriesList.map(function(s, si){
+    var repsCol = ex.type === 'time'
+      ? '<div style="text-align:center"><input type="number" class="serie-input" value="'+(s.duration||60)+'" min="5" max="3600" onchange="updSessEditSerie('+si+',\'duration\',+this.value)"/><span class="serie-label">sec</span></div>'
+      : '<div style="text-align:center"><input type="number" class="serie-input" value="'+(s.reps||10)+'" min="1" max="200" onchange="updSessEditSerie('+si+',\'reps\',+this.value)"/><span class="serie-label">reps</span></div>';
+    var weightCol = ex.type !== 'time'
+      ? '<div style="text-align:center"><input type="number" class="serie-input" value="'+(s.weight||0)+'" min="0" max="500" step="0.5" onchange="updSessEditSerie('+si+',\'weight\',+this.value)"/><span class="serie-label">kg</span></div>'
+      : '';
+    var delBtn = ex.seriesList.length > 1
+      ? '<button class="serie-del" onclick="delSessEditSerie('+si+')">×</button>'
+      : '<div style="width:22px"></div>';
+    return '<div class="serie-row">'
+      + '<span class="serie-num">S'+(si+1)+(s.done?' ✓':'')+'</span>'
+      + repsCol + weightCol
+      + '<div style="text-align:center"><input type="number" class="serie-input" value="'+(s.restSec||60)+'" min="0" max="600" step="5" onchange="updSessEditSerie('+si+',\'restSec\',+this.value)"/><span class="serie-label">repos s</span></div>'
+      + delBtn
+    + '</div>';
+  }).join('');
+}
+
+function updSessEditSerie(si, field, val){
+  if(activeSession && editSessExIdx !== null)
+    activeSession.exercises[editSessExIdx].seriesList[si][field] = val;
+}
+function addSessEditSerie(){
+  var ex   = activeSession.exercises[editSessExIdx];
+  var last = ex.seriesList[ex.seriesList.length-1];
+  ex.seriesList.push(ex.type === 'time'
+    ? { duration:last?last.duration:60, restSec:last?last.restSec:60, done:false, timerSec:last?last.duration:60, timerRunning:false, restRunning:false, restRemaining:0 }
+    : { reps:last?last.reps:10, weight:last?last.weight:0, restSec:last?last.restSec:60, done:false, restRunning:false, restRemaining:0 });
+  ex.sets = ex.seriesList.length;
+  renderEditSessSeriesList();
+}
+function delSessEditSerie(si){
+  var ex = activeSession.exercises[editSessExIdx];
+  if(ex.seriesList.length <= 1) return;
+  ex.seriesList.splice(si, 1);
+  ex.sets = ex.seriesList.length;
+  renderEditSessSeriesList();
+}
+function closeEditSessModal(){
+  document.getElementById('modal-edit-sess').classList.remove('open');
+  if(activeSession && editSessExIdx !== null)
+    activeSession.exercises[editSessExIdx].modifiedDuringSess = true;
+  editSessExIdx = null;
+  renderSess();
+}
+function saveEditSessModal(){ closeEditSessModal(); }
+
+// ═══════════════════════════════════════════════════════════════════
+// 💾 PROPOSER DE METTRE À JOUR LA ROUTINE APRÈS LA SÉANCE
+// Détecte les exercices modifiés (✏️) ET les nouveaux exercices (➕) 
+// ajoutés pendant la séance, et demande à l'utilisateur de les enregistrer.
+// ═══════════════════════════════════════════════════════════════════
+function checkAndProposeRoutineUpdate(sessionData){
+  // Trouver la routine d'origine
+  var routineIdx = -1;
+  for(var _ri=0; _ri<routines.length; _ri++){
+    if(routines[_ri].name === sessionData.routineName){
+      routineIdx = _ri;
+      break;
+    }
+  }
+  if(routineIdx < 0) return;
+  
+  var routine = routines[routineIdx];
+  var originalExNames = routine.exercises.map(function(e){ return e.name; });
+  
+  // Déterminer les exercices modifiés ET les nouveaux
+  // Exercices modifiés (séries/poids changés via ✏️)
+  var modified = (sessionData.exercises||[]).filter(function(e){ return e.modifiedDuringSess; });
+  // Nouveaux exercices ajoutés pendant la séance (via ➕ Ajouter)
+  // On détecte via le flag addedDuringSess OU l'absence du nom dans la routine d'origine
+  var newExercises = (sessionData.exercises||[]).filter(function(e){
+    return e.addedDuringSess || originalExNames.indexOf(e.name) === -1;
+  });
+  
+  // Si aucun changement, rien à faire
+  if(!modified.length && !newExercises.length) return;
+  
+  // Construire le message
+  var msg = '';
+  if(modified.length > 0) msg += '✏️ Tu as modifié '+modified.length+' exercice(s).\n';
+  if(newExercises.length > 0) msg += '➕ Tu as ajouté '+newExercises.length+' exercice(s).\n';
+  msg += '\nVeux-tu mettre à jour la routine "'+sessionData.routineName+'" ?';
+  
+  // Proposer la mise à jour
+  if(confirm(msg)){
+    // Mettre à jour les exercices modifiés
+    sessionData.exercises.forEach(function(sessEx){
+      if(!sessEx.modifiedDuringSess) return;
+      var re = routine.exercises.find(function(r){ return r.name === sessEx.name; });
+      if(re && sessEx.seriesList){
+        re.seriesList = sessEx.seriesList.map(function(s){
+          return { reps:s.reps, weight:s.weight, restSec:s.restSec, duration:s.duration };
+        });
+        re.sets = re.seriesList.length;
+      }
+    });
+    
+    // Ajouter les nouveaux exercices
+    newExercises.forEach(function(newEx){
+      var cleanEx = {
+        id: newEx.id,
+        name: newEx.name,
+        type: newEx.type,
+        sets: newEx.sets,
+        reps: newEx.reps,
+        weight: newEx.weight,
+        duration: newEx.duration,
+        rest: newEx.rest,
+        muscles: newEx.muscles,
+        sec: newEx.sec,
+        notes: newEx.notes || '',
+        seriesList: (newEx.seriesList||[]).map(function(s){
+          return { reps:s.reps, weight:s.weight, restSec:s.restSec, duration:s.duration };
+        })
+      };
+      routine.exercises.push(cleanEx);
+    });
+    
+    saveData();
+  }
+}
+
+// ── Mettre à jour launchSession pour propager seriesList ──
+
+
+// ═══════════════════════════════════════════════════════════════════
+// 🔀 RÉORGANISATION DES EXERCICES PAR DRAG & DROP
+// Ouvre un modal avec les exercices en cartes compactes.
+// L'utilisateur peut les glisser-déposer pour changer l'ordre.
+// L'ordre mis à jour est sauvegardé dans editExercises immédiatement.
+// ═══════════════════════════════════════════════════════════════════
+var reorgDragIdx = null; // Index de l'élément en cours de déplacement
+
+// ════════════════════════════════════════════════════════════════════
+// 🔀 openReorgModal()
+// Ouvre le pop-up de réorganisation des exercices d'une routine.
+// Affiche chaque exercice sous forme de petite carte draggable.
+// L'utilisateur peut glisser les cartes pour changer leur ordre.
+// L'ordre est mis à jour dans editExercises à chaque dépôt.
+// ════════════════════════════════════════════════════════════════════
+function openReorgModal(){
+  if(!editExercises.length){
+    alert("Ajoute d'abord des exercices à ta routine !");
+    return;
+  }
+  renderReorgList();
+  document.getElementById('modal-reorg').classList.add('open');
+}
+
+function closeReorgModal(){
+  document.getElementById('modal-reorg').classList.remove('open');
+  renderEditExercises(); // Rafraîchit l'éditeur avec le nouvel ordre
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔀 renderReorgList()
+// Dessine la liste des exercices dans le modal de réorganisation.
+// Chaque exercice = une carte compacte avec :
+//   - Son numéro de position (1, 2, 3...)
+//   - Son image ronde
+//   - Son nom et le nombre de séries
+//   - Une poignée de drag (⠿) pour le glisser
+// ════════════════════════════════════════════════════════════════════
+function renderReorgList(){
+  var container = document.getElementById('reorg-list');
+  container.innerHTML = editExercises.map(function(ex, i){
+    // Image ronde de l'exercice
+    var dbEx = DB.find(function(d){ return d.name === ex.name; });
+    var img = (dbEx && dbEx.image) ? dbEx.image
+      : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%23333" width="40" height="40" rx="20"/><text x="20" y="26" text-anchor="middle" fill="white" font-size="18">💪</text></svg>';
+    var nbS = (ex.seriesList && ex.seriesList.length) ? ex.seriesList.length : (ex.sets || 1);
+    return '<div class="reorg-item" id="ri-'+i+'"'
+      + ' draggable="true"'
+      + ' ondragstart="reorgDragStart('+i+',this)"'
+      + ' ondragover="reorgDragOver(event,'+i+',this)"'
+      + ' ondrop="reorgDrop('+i+')"'
+      + ' ondragend="reorgDragEnd()">'
+      + '<span class="reorg-num">'+(i+1)+'</span>'
+      + '<img class="reorg-img" src="'+img+'" alt="'+ex.name+'"/>'
+      + '<div style="flex:1;min-width:0">'
+        + '<div class="reorg-name">'+ex.name+'</div>'
+        + '<div class="reorg-sub">'+nbS+' série'+(nbS>1?'s':'')+'</div>'
+      + '</div>'
+      + '<span class="reorg-handle">⠿</span>'
+    + '</div>';
+  }).join('');
+}
+
+function reorgDragStart(i, el){
+  reorgDragIdx = i;
+  el.classList.add('dragging-ghost');
+}
+
+function reorgDragOver(e, i, el){
+  e.preventDefault();
+  document.querySelectorAll('.reorg-item').forEach(function(it){ it.classList.remove('drag-over'); });
+  if(reorgDragIdx !== null && i !== reorgDragIdx) el.classList.add('drag-over');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔀 reorgDrop(targetIdx)
+// Finalise le drag & drop : échange les deux exercices dans editExercises.
+// PARAMÈTRE : targetIdx = index de l'exercice sur lequel on a lâché
+//
+// COMMENT ÇA MARCHE :
+//   Si on déplace l'exercice 2 sur l'exercice 4 :
+//   Avant : [Ex1, Ex2, Ex3, Ex4, Ex5]
+//   Après : [Ex1, Ex4, Ex3, Ex2, Ex5]
+//   Les deux exercices sont simplement échangés.
+// ════════════════════════════════════════════════════════════════════
+function reorgDrop(targetIdx){
+  if(reorgDragIdx === null || reorgDragIdx === targetIdx) return;
+  // Échanger les deux exercices dans le tableau
+  var tmp = editExercises[reorgDragIdx];
+  editExercises[reorgDragIdx] = editExercises[targetIdx];
+  editExercises[targetIdx] = tmp;
+  reorgDragIdx = null;
+  renderReorgList(); // Redessiner avec les nouveaux numéros
+}
+
+function reorgDragEnd(){
+  reorgDragIdx = null;
+  document.querySelectorAll('.reorg-item').forEach(function(it){
+    it.classList.remove('dragging-ghost', 'drag-over');
+  });
+}
+
+
+// ════════════════════════════════════════════════════════════════
+// 🔀 RÉORGANISATION DES EXERCICES
+// Permet de changer l'ordre des exercices dans une routine
+// via un modal avec drag & drop simplifié.
+// ════════════════════════════════════════════════════════════════
+var reorgDragIdx = null;
+
+// ════════════════════════════════════════════════════════════════════
+// 🔀 openReorgModal()
+// Ouvre le pop-up de réorganisation des exercices d'une routine.
+// Affiche chaque exercice sous forme de petite carte draggable.
+// L'utilisateur peut glisser les cartes pour changer leur ordre.
+// L'ordre est mis à jour dans editExercises à chaque dépôt.
+// ════════════════════════════════════════════════════════════════════
+function openReorgModal(){
+  if(!editExercises.length){ alert("Ajoute d'abord des exercices !"); return; }
+  renderReorgList();
+  document.getElementById('modal-reorg').classList.add('open');
+}
+
+function closeReorgModal(){
+  document.getElementById('modal-reorg').classList.remove('open');
+  renderEditExercises();
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔀 renderReorgList()
+// Dessine la liste des exercices dans le modal de réorganisation.
+// Chaque exercice = une carte compacte avec :
+//   - Son numéro de position (1, 2, 3...)
+//   - Son image ronde
+//   - Son nom et le nombre de séries
+//   - Une poignée de drag (⠿) pour le glisser
+// ════════════════════════════════════════════════════════════════════
+function renderReorgList(){
+  var container = document.getElementById('reorg-list');
+  container.innerHTML = editExercises.map(function(ex, i){
+    var dbEx = DB.find(function(d){ return d.name === ex.name; });
+    var img = (dbEx && dbEx.image) ? dbEx.image
+      : 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40"><rect fill="%23333" width="40" height="40" rx="20"/><text x="20" y="26" text-anchor="middle" fill="white" font-size="18">%F0%9F%92%AA</text></svg>';
+    var nb = (ex.seriesList && ex.seriesList.length) ? ex.seriesList.length : (ex.sets||1);
+    return '<div class="reorg-item" id="ri-'+i+'"'
+      +' draggable="true"'
+      +' ondragstart="reorgDragStart('+i+',this)"'
+      +' ondragover="reorgDragOver(event,'+i+',this)"'
+      +' ondrop="reorgDrop('+i+')"'
+      +' ondragend="reorgDragEnd()">'
+      +'<span class="reorg-num">'+(i+1)+'</span>'
+      +'<img class="reorg-img" src="'+img+'" alt="'+ex.name+'"/>'
+      +'<div class="reorg-info">'
+        +'<div class="reorg-name">'+ex.name+'</div>'
+        +'<div class="reorg-sub">'+nb+' série'+(nb>1?'s':'')+'</div>'
+      +'</div>'
+      +'<span class="reorg-handle">&#8942;</span>'
+    +'</div>';
+  }).join('');
+}
+
+function reorgDragStart(i, el){
+  reorgDragIdx = i;
+  el.classList.add('dragging-ghost');
+}
+
+function reorgDragOver(e, i, el){
+  e.preventDefault();
+  document.querySelectorAll('.reorg-item').forEach(function(it){ it.classList.remove('drag-over'); });
+  if(reorgDragIdx !== null && i !== reorgDragIdx) el.classList.add('drag-over');
+}
+
+// ════════════════════════════════════════════════════════════════════
+// 🔀 reorgDrop(targetIdx)
+// Finalise le drag & drop : échange les deux exercices dans editExercises.
+// PARAMÈTRE : targetIdx = index de l'exercice sur lequel on a lâché
+//
+// COMMENT ÇA MARCHE :
+//   Si on déplace l'exercice 2 sur l'exercice 4 :
+//   Avant : [Ex1, Ex2, Ex3, Ex4, Ex5]
+//   Après : [Ex1, Ex4, Ex3, Ex2, Ex5]
+//   Les deux exercices sont simplement échangés.
+// ════════════════════════════════════════════════════════════════════
+function reorgDrop(targetIdx){
+  if(reorgDragIdx === null || reorgDragIdx === targetIdx) return;
+  var tmp = editExercises[reorgDragIdx];
+  editExercises[reorgDragIdx] = editExercises[targetIdx];
+  editExercises[targetIdx] = tmp;
+  reorgDragIdx = null;
+  renderReorgList();
+}
+
+function reorgDragEnd(){
+  reorgDragIdx = null;
+  document.querySelectorAll('.reorg-item').forEach(function(it){
+    it.classList.remove('dragging-ghost','drag-over');
+  });
+}
+
+renderHome();renderBiblio();
+</script>
+
+<div id="modal-profil" style="visibility:hidden;pointer-events:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;display:flex;align-items:flex-end;justify-content:center">
+  <div style="background:var(--bg2);border:1px solid var(--border2);border-radius:14px 14px 0 0;padding:16px;width:100%;max-width:420px">
+    <h2 style="font-size:15px;font-weight:600;margin-bottom:14px;color:var(--text)">Modifier le profil</h2>
+    <div id="p-avatar-modal" onclick="document.getElementById('p-photo-input').click()" style="width:68px;height:68px;border-radius:50%;background:var(--bg3);border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 14px;cursor:pointer;position:relative;overflow:hidden">👤
+      <div style="position:absolute;bottom:0;right:0;width:20px;height:20px;background:var(--accent);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;pointer-events:none">✏️</div>
+    </div>
+    <input type="file" id="p-photo-input" accept="image/*" style="display:none" onchange="handlePhotoUpload(this)"/>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+      <div style="grid-column:1/-1"><label>Pseudo</label><input type="text" id="e-pseudo" placeholder="Ton pseudo..."/></div>
+      <div><label>Poids (kg)</label><input type="number" id="e-poids" placeholder="75" min="20" max="300"/></div>
+      <div><label>Taille (cm)</label><input type="number" id="e-taille" placeholder="175" min="100" max="250"/></div>
+      <div><label>Âge</label><input type="number" id="e-age" placeholder="25" min="10" max="100"/></div>
+      <div><label>Sexe</label>
+        <select id="e-sexe" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;font-size:13px;background:var(--bg3);color:var(--text);font-family:'DM Sans',sans-serif;outline:none;margin-bottom:8px">
+          <option value="">--</option>
+          <option value="Homme">Homme</option>
+          <option value="Femme">Femme</option>
+          <option value="Autre">Autre</option>
+        </select>
+        <div><label>objectif </label>
+          <select id="e-objectif" style="width:100%;padding:8px 10px;border:1px solid var(--border2);border-radius:8px;font-size:13px;background:var(--bg3);color:var(--text);font-family:'DM Sans',sans-serif;outline:none;margin-bottom:8px">
+            <option value="">--</option>
+            <option value="Perte de poids">Perte de poids</option>
+            <option value="Prise de masse">Prise de masse</option>
+            <option value="Maintien">Maintien</option>
+            <option value="Performance">Performance</option>
+            <option value="préparation à un sport">Préparation à un sport</option>
+            <option value="santé générale">Santé générale</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button onclick="saveProfilModal()" style="flex:1;padding:10px;font-size:13px;font-weight:500;background:var(--green);color:#fff;border:none;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif">Enregistrer</button>
+      <button onclick="closeProfilModal()" style="flex:1;padding:10px;font-size:13px;font-weight:500;background:transparent;color:var(--text);border:1px solid var(--border2);border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif">Annuler</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══ PANNEAU STATS GLOBAL ══ -->
+<div class="stats-panel" id="stats-panel">
+  <div class="stats-panel-header">
+    <button onclick="closeStatsPanel()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0">← Retour</button>
+    <div class="stats-panel-title">📊 Statistiques</div>
+    <div class="period-toggle">
+      <button class="period-btn active" id="pt-week" onclick="setStatPeriod('week')">Sem.</button>
+      <button class="period-btn" id="pt-month" onclick="setStatPeriod('month')">Mois</button>
+      <button class="period-btn" id="pt-all" onclick="setStatPeriod('all')">Total</button>
+    </div>
+  </div>
+  <div class="stats-body">
+
+    <!-- Bloc 1 : chiffres clés -->
+    <div class="sblock">
+      <div class="sblock-title">⚡ Chiffres clés</div>
+      <div class="s4grid">
+        <div class="scard scard-accent"><div class="scard-label">Séances</div><div class="scard-val" id="ps-count">0</div></div>
+        <div class="scard"><div class="scard-label">Heures</div><div class="scard-val" id="ps-hours">0<span class="scard-unit">h</span></div></div>
+        <div class="scard scard-green"><div class="scard-label">Calories est.</div><div class="scard-val" id="ps-kcal">0<span class="scard-unit" style="font-size:9px">kcal</span></div></div>
+        <div class="scard"><div class="scard-label">Séries tot.</div><div class="scard-val" id="ps-sets">0</div></div>
+      </div>
+    </div>
+
+    <!-- Bloc 2 : volume -->
+    <div class="sblock">
+      <div class="sblock-title">💪 Volume</div>
+      <div class="s4grid">
+        <div class="scard"><div class="scard-label">Répétitions</div><div class="scard-val" id="ps-reps">0</div></div>
+        <div class="scard"><div class="scard-label">Temps repos</div><div class="scard-val" id="ps-rest">0<span class="scard-unit">min</span></div></div>
+      </div>
+    </div>
+
+    <!-- Bloc 3 : calories par jour (barres) -->
+    <div class="sblock">
+      <div class="sblock-title">🔥 Calories — 7 derniers jours</div>
+      <div class="bar-wrap" id="ps-cal-bars"></div>
+    </div>
+
+    <!-- Bloc 4 : calendrier -->
+    <div class="sblock">
+      <div class="sblock-title">📅 Jours d'entraînement</div>
+      <div id="ps-calendar"></div>
+      <div style="display:flex;gap:12px;margin-top:7px">
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:3px;background:var(--accent)"></div><span style="font-size:10px;color:var(--text3)">1 séance</span></div>
+        <div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:3px;background:var(--green)"></div><span style="font-size:10px;color:var(--text3)">2+ séances</span></div>
+      </div>
+    </div>
+
+    <!-- Bloc 5 : muscles les plus travaillés -->
+    <div class="sblock">
+      <div class="sblock-title">🏋️ Muscles les plus travaillés</div>
+      <div id="ps-muscles"></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ══ PANNEAU STATS ROUTINE (historique) ══ -->
+<div class="stats-panel" id="routine-stats-panel">
+  <div class="stats-panel-header">
+    <button onclick="closeRoutineStatsPanel()" style="background:none;border:none;color:var(--accent);font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;padding:0">← Retour</button>
+    <div class="stats-panel-title" id="rsp-title">Stats séance</div>
+    <div style="width:60px"></div>
+  </div>
+  <div class="stats-body" id="rsp-body"></div>
+</div>
+
+
+<!-- Modal : modifier un exercice PENDANT la séance -->
+<div class="edit-sess-modal" id="modal-edit-sess">
+  <div class="edit-sess-modal-inner">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <h2 style="font-size:15px;font-weight:600;color:var(--text);margin:0" id="esm-title">Modifier l'exercice</h2>
+      <button onclick="closeEditSessModal()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div id="esm-series-list"></div>
+    <button class="btn-add-serie" onclick="addSessEditSerie()">+ Ajouter une série</button>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button onclick="saveEditSessModal()" style="flex:1;padding:10px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif">✓ Valider les modifications</button>
+    </div>
+    <div style="margin-top:8px;font-size:10px;color:var(--text3);text-align:center;line-height:1.5">Modifications appliquées à cette séance uniquement.<br>Tu pourras mettre à jour la routine à la fin.</div>
+  </div>
+</div>
+
+
+<!-- ══ MODAL RÉORGANISATION DES EXERCICES ══ -->
+<div class="reorg-modal-bg" id="modal-reorg">
+  <div class="reorg-modal">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0">
+      <div style="font-size:14px;font-weight:600;color:var(--text)">🔀 Réorganiser</div>
+      <button onclick="closeReorgModal()" style="background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;line-height:1">×</button>
+    </div>
+    <div style="font-size:10px;color:var(--text3);margin-top:4px;flex-shrink:0">Glisse les exercices pour changer leur ordre.</div>
+    <div class="reorg-list" id="reorg-list"></div>
+    <button onclick="closeReorgModal()" style="width:100%;padding:10px;background:var(--green);color:#fff;border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;flex-shrink:0">✓ Valider l'ordre</button>
+  </div>
+</div>
+
+
+</body>
+</html>
