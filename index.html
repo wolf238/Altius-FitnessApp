@@ -13,11 +13,12 @@
        - maximum-scale=1.0 → empêche le zoom manuel -->
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
   <!-- Titre affiché dans l’onglet du navigateur -->
-<title>My FitTrack</title>
+<title>Altius</title>
  <!-- Importation de deux polices Google Fonts :
        - DM Sans → texte général
        - DM Mono → chiffres / style “terminal” -->
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+<link rel="manifest" href="manifest.json">
 
 <!-- :root = zone où l’on définit des variables CSS réutilisables partout.
    Cela permet de changer facilement les couleurs et styles de toute l’app. -->
@@ -278,7 +279,7 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px}
 <div class="shell">
       <!-- ══ TOPBAR : barre en haut avec le nom de l'app et un petit indicateur de session -->
   <div class="topbar">
-    <div class="topbar-logo"><span style="color:var(--accent)">Fit</span><span style="color:var(--accent2)">Track</span></div>
+    <div class="topbar-logo"><span style="color:var(--accent)">Alt</span><span style="color:var(--accent2)">ius</span></div>
       <!-- Petit badge qui peut afficher la durée d'une séance ou un statut.
            Il est caché par défaut (classe .session-pill) et affiché si on lui ajoute .on via JS. -->
     <div class="session-pill" id="sess-pill">00:00</div>
@@ -1875,7 +1876,7 @@ function renderProfil(){
   if(av) av.innerHTML=profil.photo?'<img src="'+profil.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%"/>':'👤';
   // Pseudo
   var pp=document.getElementById('p-pseudo'); if(pp) pp.textContent=profil.pseudo||'Mon Profil';
-  var ps=document.getElementById('p-sub');    if(ps) ps.textContent=profil.pseudo?'Athlète FitTrack':'Appuie pour modifier';
+  var ps=document.getElementById('p-sub');    if(ps) ps.textContent=profil.pseudo?'Athlète Altius':'Appuie pour modifier';
   // Physique
   var dp=document.getElementById('p-poids');  if(dp) dp.textContent=profil.poids?profil.poids+' kg':'-- kg';
   var dt=document.getElementById('p-taille'); if(dt) dt.textContent=profil.taille?profil.taille+' cm':'-- cm';
