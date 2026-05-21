@@ -577,101 +577,6 @@ label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px}
 // ║    Utilisé pour les chronomètres (toutes les 1000ms = 1 seconde).         ║
 // ╚══════════════════════════════════════════════════════════════════════════════╝
 
-// ════════════════════════════════════════════════
-// 🔒 PROTECTION PAR CODE PIN
-// Ajoute ce code au tout début de ton <script>
-// Change la valeur de APP_PIN pour ton code secret
-// ════════════════════════════════════════════════
-
-var APP_PIN = "1234"; // ← Change ce code
-
-function checkPin() {
-  // Si déjà déverrouillé dans cette session → OK
-  if(sessionStorage.getItem('unlocked') === 'true') return;
-
-  // Créer l'écran de verrouillage
-  var lock = document.createElement('div');
-  lock.id = 'lock-screen';
-  lock.style.cssText = 'position:fixed;inset:0;background:#0F0F11;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:DM Sans,sans-serif';
-
-  lock.innerHTML =
-    '<div style="font-size:40px;margin-bottom:16px">🔒</div>' +
-    '<div style="font-size:20px;font-weight:600;color:#F0F0F2;margin-bottom:6px">Altius</div>' +
-    '<div style="font-size:13px;color:#9090A0;margin-bottom:32px">Entrez votre code d\'accès</div>' +
-
-    // Affichage des points du PIN
-    '<div id="pin-dots" style="display:flex;gap:14px;margin-bottom:32px">' +
-      '<div class="dot" style="width:14px;height:14px;border-radius:50%;border:2px solid #4F8EF7;background:transparent"></div>' +
-      '<div class="dot" style="width:14px;height:14px;border-radius:50%;border:2px solid #4F8EF7;background:transparent"></div>' +
-      '<div class="dot" style="width:14px;height:14px;border-radius:50%;border:2px solid #4F8EF7;background:transparent"></div>' +
-      '<div class="dot" style="width:14px;height:14px;border-radius:50%;border:2px solid #4F8EF7;background:transparent"></div>' +
-    '</div>' +
-
-    // Clavier numérique
-    '<div id="pin-pad" style="display:grid;grid-template-columns:repeat(3,72px);gap:12px">' +
-      [1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(function(n) {
-        if(n === '') return '<div></div>';
-        return '<button onclick="pinPress(\'' + n + '\')" style="' +
-          'width:72px;height:72px;border-radius:50%;' +
-          'background:' + (n==='⌫' ? 'transparent' : '#1E1E23') + ';' +
-          'border:1px solid ' + (n==='⌫' ? 'transparent' : 'rgba(255,255,255,0.08)') + ';' +
-          'color:' + (n==='⌫' ? '#9090A0' : '#F0F0F2') + ';' +
-          'font-size:' + (n==='⌫' ? '22px' : '24px') + ';' +
-          'font-weight:500;cursor:pointer;font-family:inherit;transition:background .15s">' +
-          n + '</button>';
-      }).join('') +
-    '</div>' +
-
-    '<div id="pin-error" style="color:#E05252;font-size:12px;margin-top:20px;height:18px"></div>';
-
-  document.body.appendChild(lock);
-}
-
-var pinEntry = '';
-
-function pinPress(val) {
-  if(val === '⌫') {
-    // Effacer le dernier chiffre
-    pinEntry = pinEntry.slice(0,-1);
-  } else {
-    if(pinEntry.length >= 4) return;
-    pinEntry += val;
-  }
-
-  // Mettre à jour les points visuels
-  var dots = document.querySelectorAll('#pin-dots .dot');
-  dots.forEach(function(dot, i) {
-    dot.style.background = i < pinEntry.length ? '#4F8EF7' : 'transparent';
-  });
-
-  // Vérifier le code quand 4 chiffres sont saisis
-  if(pinEntry.length === 4) {
-    setTimeout(function() {
-      if(pinEntry === APP_PIN) {
-        // Code correct → déverrouiller
-        sessionStorage.setItem('unlocked', 'true');
-        var lock = document.getElementById('lock-screen');
-        lock.style.transition = 'opacity .3s';
-        lock.style.opacity = '0';
-        setTimeout(function(){ lock.remove(); }, 300);
-      } else {
-        // Code faux → secouer et réinitialiser
-        document.getElementById('pin-error').textContent = 'Code incorrect. Réessaie.';
-        var dots2 = document.querySelectorAll('#pin-dots .dot');
-        dots2.forEach(function(d){ d.style.background = '#E05252'; });
-        setTimeout(function(){
-          pinEntry = '';
-          dots2.forEach(function(d){ d.style.background = 'transparent'; });
-          document.getElementById('pin-error').textContent = '';
-        }, 800);
-      }
-    }, 100);
-  }
-}
-
-// Lancer la vérification au chargement
-checkPin();
-
 // ══════════════════════════════════════════
 // 📦 BASE DE DONNÉES DES EXERCICES (DB)
 // ══════════════════════════════════════════
@@ -696,10 +601,10 @@ checkPin();
 var DB=[
 {id:1,name:"Développé couché",cat:"Poitrine",equip:"Barre",muscles:["Grand pectoral"],sec:["Deltoïde antérieur","Triceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2019/08/developpe-couche.gif"},
 {id:2,name:"Développé couché haltères",cat:"Poitrine",equip:"Haltères",muscles:["Grand pectoral"],sec:["Deltoïde antérieur","Triceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/05/developpe-couche-halteres-exercice-musculation.gif"},
-{id:3,name:"Pompes",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand pectoral"],sec:["Triceps","Deltoïdes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2020/10/pompe-musculation.gif"},
+{id:3,name:"Pompes",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand pectoral"],sec:["Triceps","Deltoïdes"],timed:false,image:"https://www.body-burn.com/wp-content/uploads/2024/03/pompe-exercice-musculation.gif"},
 {id:4,name:"Écarté couché",cat:"Poitrine",equip:"Haltères",muscles:["Grand pectoral"],sec:["Deltoïde antérieur"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/09/ecarte-couche-haltere.gif"},
 {id:5,name:"Dips",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand pectoral","Triceps"],sec:["Deltoïde antérieur"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/01/dips-pectoraux-440x440.gif"},
-{id:6,name:"Pompes sérrées",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand pectoral"],sec:["Triceps","Épaules","Biceps"],timed:false,image: "https://www.body-burn.com/wp-content/uploads/2024/03/pompe-exercice-musculation.gif"},
+{id:6,name:"Pompes millitaire",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand pectoral"],sec:["Triceps","Épaules","Biceps"],timed:false,image: "https://www.body-burn.com/wp-content/uploads/2024/03/pompe-exercice-musculation.gif"},
 {id:7,name:"Pompes planche",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand dorsal"],sec:["Biceps","triceps","Épaules","abdominaux","avant-bras"],timed:false,image:"https://i.pinimg.com/736x/42/ac/e4/42ace438a6ad772c5fa30a51b479862f.jpg"},
 {id:8,name:"Pompes claquées",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand dorsal","Biceps"],sec:["Triceps","épaules"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2020/10/pompe-musculation.gif"},
 {id:9,name:"Pompes archée",cat:"Poitrine",equip:"Poids du corps",muscles:["Grand pectoral","Biceps"],sec:["Triceps"],timed:false,image:"https://www.streetliftings.fr/wp-content/uploads/2024/10/Pompes-archers-execution-du-mouvement.gif"},
@@ -717,7 +622,7 @@ var DB=[
 {id:21,name:"Tirage vertical prise sérrée",cat:"Dos",equip:"Machine",muscles:["Grand dorsal"],sec:["Biceps","Rhomboïdes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2021/08/tirage-vertical-prise-serree.gif"},
 {id:22,name:"Développé militaire (barre)",cat:"Épaules",equip:"Barre",muscles:["Deltoïde antérieur","Deltoïde médial"],sec:["Triceps","Trapèzes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/08/developpe-militaire-exercice-musculation.gif"},
 {id:23,name:"Elevations latérales",cat:"Épaules",equip:"Haltères",muscles:["Deltoïde médial"],sec:["Trapèzes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/08/elevations-laterales-exercice-musculation.gif"},
-{id:24,name:"Elevations frontales",cat:"Épaules",equip:"Haltères",muscles:["Deltoïde antérieur"],sec:[],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/08/elevations-frontales-exercice-musculation.gif"},
+{id:24,name:"Elevations frontales (halteres)",cat:"Épaules",equip:"Haltères",muscles:["Deltoïde antérieur"],sec:[],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2000/08/elevations-frontales-exercice-musculation.gif"},
 {id:25,name:"Oiseau",cat:"Épaules",equip:"Haltères",muscles:["Deltoïde postérieur","Rhomboïdes"],sec:["Trapèzes"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2021/12/oiseau-assis-sur-banc.gif"},
 {id:26,name:"Shrugs",cat:"Épaules",equip:"Haltères",muscles:["Trapèzes"],sec:[],timed:false,image:"https://fitliferegime.com/wp-content/uploads/2023/05/Dumbbell-Shrug.gif"},
 {id:27,name:"Développé millitaire (haltères)",cat:"Épaules",equip:"Haltères",muscles:["Deltoides"],sec:["Biceps","Triceps"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/02/developpe-epaules-halteres-debout.gif"},
@@ -747,7 +652,8 @@ var DB=[
 {id:51,name:"Extension triceps (haltères)",cat:"Bras",equip:"Haltères",muscles:["Triceps"],sec:[],timed:false,image:"https://boxlifemagazine.com/wp-content/uploads/2023/12/Overhead-Dumbbell-Extensions.jpeg"},
 {id:52,name:"Pompes diamant",cat:"Triceps",equip:"Poids du corps",muscles:["Triceps"],sec:["Grand pectoral"],timed:false,image:"https://boxlifemagazine.com/wp-content/uploads//2023/08/pompe-mains-serrees-min-1.gif"},
 {id:53,name:"Extension poignets (barre)",cat:"avant-bras",equip:"Barre",muscles:["avant-bras"],sec:[],timed:false,image:"https://liftmanual.com/wp-content/uploads/2023/04/barbell-palms-down-wrist-curl-over-a-bench.gif"},
-{id:30,name:"Gainage planche",cat:"Abdominaux",equip:"Poids du corps",muscles:["Abdominaux","Transverse"],sec:["Lombaires","Fessiers"],timed:true,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/05/planche-abdos.gif"}
+{id:54,name:"Gainage planche",cat:"Abdominaux",equip:"Poids du corps",muscles:["Abdominaux","Transverse"],sec:["Lombaires","Fessiers"],timed:true,image:"https://www.docteur-fitness.com/wp-content/uploads/2022/05/planche-abdos.gif"},
+{id:55,name:"burpees",cat:"cardio",equip:"Poids du corps",muscles:["Corps"],sec:["Abdominaux","Épaules,bras,ischio-jambiers"],timed:false,image:"https://www.docteur-fitness.com/wp-content/uploads/2019/08/burpee-muscle-sollicites.gif"}
 ];
 
 // ═══════════════════════════════════════════════════════════════════
@@ -1367,10 +1273,16 @@ function deleteRoutine(i){
 // ═══════════════════════════════════════════════════════════════════
 
 // openModalAddEx() : Ouvre la modale pour chercher et ajouter un exercice
+// Flag global : true quand on ajoute un exercice pendant une séance active
+// false quand on l'ajoute depuis l'éditeur de routine
+var isAddingToSession = false;
+
 function openModalAddEx(){
+  // Détecter si on est en séance active ou dans l'éditeur de routine
+  isAddingToSession = (activeSession !== null);
   document.getElementById('modal-search').value='';
   document.getElementById('modal-add-ex').classList.add('open');
-  renderModalBiblio()
+  renderModalBiblio();
 }
 
 // closeModalAddEx() : Ferme la modale d'ajout d'exercice
@@ -1483,9 +1395,36 @@ function confirmCfgEx(){
       : { reps: ex.reps||10, weight: ex.weight||0, restSec: ex.rest||60 });
   }
 
-  editExercises.push(ex);
-  closeModalCfg();
-  renderEditExercises();
+  if(isAddingToSession && activeSession){
+    // ── CAS 1 : On est en séance → ajouter à activeSession.exercises ──
+    // Préparer la seriesList avec les propriétés de session (done, timers...)
+    var sessSeriesList = ex.seriesList.map(function(s){
+      return Object.assign({}, s, {
+        done: false,
+        timerSec: s.duration || ex.duration || 60,
+        timerRunning: false,
+        restRunning: false,
+        restRemaining: s.restSec || 0
+      });
+    });
+    var sessEx = Object.assign({}, ex, {
+      done: false,
+      origDur: ex.duration || 0,
+      timerSec: ex.type==='time' ? (ex.duration||60) : 0,
+      timerRunning: false,
+      seriesList: sessSeriesList,
+      addedDuringSess: true  // Flag pour checkAndProposeRoutineUpdate
+    });
+    activeSession.exercises.push(sessEx);
+    closeModalCfg();
+    renderSess(); // Rafraîchir l'écran de séance
+  } else {
+    // ── CAS 2 : On est dans l'éditeur de routine → comportement normal ──
+    editExercises.push(ex);
+    closeModalCfg();
+    renderEditExercises();
+  }
+  isAddingToSession = false; // Réinitialiser le flag
 }
 
 
@@ -2082,7 +2021,8 @@ var MET_MAP = {
   "Abdominaux vélo":3.5,"Mountain climbers":8.0,"Burpees":8.5,"Course sur place":9.0,
   "Corde à sauter":10.0,"Kettlebell swing":7.0,"Boxe":8.0,"Pistol squat":6.0,
   "Fentes bulgares":5.5,"Curl Disque":3.5,"Extension triceps (disque)":3.5,
-  "Extension poignets (barre)":2.5
+  "Extension poignets (barre)":2.5, "Extension poignets (haltères)":2.5,
+  "gainage planche":3.8
 };
 var DEFAULT_MET = 4.0;
 
@@ -2581,9 +2521,12 @@ function checkAndProposeRoutineUpdate(sessionData){
   var originalExNames = routine.exercises.map(function(e){ return e.name; });
   
   // Déterminer les exercices modifiés ET les nouveaux
+  // Exercices modifiés (séries/poids changés via ✏️)
   var modified = (sessionData.exercises||[]).filter(function(e){ return e.modifiedDuringSess; });
+  // Nouveaux exercices ajoutés pendant la séance (via ➕ Ajouter)
+  // On détecte via le flag addedDuringSess OU l'absence du nom dans la routine d'origine
   var newExercises = (sessionData.exercises||[]).filter(function(e){
-    return originalExNames.indexOf(e.name) === -1;
+    return e.addedDuringSess || originalExNames.indexOf(e.name) === -1;
   });
   
   // Si aucun changement, rien à faire
